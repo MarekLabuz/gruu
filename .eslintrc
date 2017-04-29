@@ -1,0 +1,15 @@
+{
+  "parserOptions": {
+    "ecmaVersion": 6
+  },
+  "env": {
+    "browser": true
+  },
+  "rules": {
+    "func-names": 0,
+    "no-underscore-dangle": 0
+  },
+  "globals": {
+    "createApp": true
+  }
+}
