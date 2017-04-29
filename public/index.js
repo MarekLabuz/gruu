@@ -16,8 +16,8 @@ const root = createApp(container, [ // eslint-disable-line no-unused-vars
 
 const header = {
   _type: 'div',
-  className: className => `center ${className}`,
   _updateWith: { className: 'root[0].state.headerClassName' },
+  className: className => `center ${className}`,
   children: [
     { _type: 'div', innerHTML: 'dsfsdf' }
   ]
@@ -42,11 +42,13 @@ const question = {
               name: 'answer',
               onchange () {
                 // root[0].state.test = { counter: root[0].state.test.counter + 1 }
-                root[0].state.test.counter += 1
+                // this.parent.parent.parent.node.className = 'left'
+                // root[0].children[1].className = 'left'
+                // root[0].state.test.counter += 1
                 root[0].state.counter += 1
-                root[0].state.headerClassName = root[0].state.headerClassName === 'green' ? 'red' : 'green'
+                // root[0].state.headerClassName = root[0].state.headerClassName === 'green' ? 'red' : 'green'
                 // root[0].state.array = [...root[0].state.array, 5]
-                root[0].state.array.push(5)
+                // root[0].state.array.push(5)
               }
             },
             {
@@ -54,8 +56,8 @@ const question = {
               style: { paddingLeft: '10px' },
               children: [{
                 _type: 'text',
-                _updateWith: { content: 'root[0].state.test.counter' },
-                content: counter => `Odpowiedź ${questionId} ${counter}`
+                _updateWith: { content: 'root[0].children[1].className' },
+                content: className => `Odpowiedź ${questionId} ${className}`
               }]
             }
           ]
@@ -130,4 +132,8 @@ const table = {
   ]
 }
 
-root[0].children.push(header, question, buttons, ul, table)
+// root[0].children.push(header, question, buttons, ul, table)
+root[0].children.push(header, table)
+
+console.log(root)
+
