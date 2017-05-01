@@ -26,12 +26,19 @@ const header = {
 const question = {
   _type: 'div',
   className: 'center',
+  state: {
+    questionCounter: 1
+  },
   children: [
     {
       _type: 'div',
       className: 'question-container',
       children: [
-        { _type: 'text', content: 'Pytanie' },
+        {
+          _type: 'text',
+          _updateWith: { content: 'this.parent.parent.state.questionCounter' },
+          content: id => `Pytanie ${id}`
+        },
         ...([1, 2, 3, 4].map(questionId => ({
           _type: 'label',
           style: { display: 'flex', alignItems: 'center' },
@@ -45,7 +52,12 @@ const question = {
                 // this.parent.parent.parent.node.className = 'left'
                 // root[0].children[1].className = 'left'
                 // root[0].state.test.counter += 1
-                root[0].state.counter += 1
+                // console.log('this')
+                // this.parent.parent.className = 'sdfsdf'
+                // this.parent.parent.parent.parent.state.counter += 1
+                // root[0].state.counter += 1
+                root[0].children[1].state.questionCounter += 1
+                console.log('root[0].children[1].state.questionCounter', root[0].children[1].state.questionCounter)
                 // root[0].state.headerClassName = root[0].state.headerClassName === 'green' ? 'red' : 'green'
                 // root[0].state.array = [...root[0].state.array, 5]
                 // root[0].state.array.push(5)
@@ -56,8 +68,8 @@ const question = {
               style: { paddingLeft: '10px' },
               children: [{
                 _type: 'text',
-                _updateWith: { content: 'root[0].children[1].className' },
-                content: className => `Odpowiedź ${questionId} ${className}`
+                _updateWith: { content: 'root[0].state.counter' },
+                content: counter => `Odpowiedź ${questionId} ${counter}`
               }]
             }
           ]
@@ -132,8 +144,23 @@ const table = {
   ]
 }
 
+// const span = createComponent({
+//   _type: 'span',
+//   children: [
+//     { _type: 'text', content: 'lalala' }
+//   ]
+// })
+//
+// setTimeout(() => {
+//   span.children[0].content = 'sdfsdfdsf'
+// }, 1000)
+
+// console.log(span.children[0].content = 'sdfsdfdsf')
+
 // root[0].children.push(header, question, buttons, ul, table)
-root[0].children.push(header, table)
+root[0].children.push(header, question, table)
+
+// root[0].children[1] = null
 
 console.log(root)
 
