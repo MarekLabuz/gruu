@@ -6,25 +6,26 @@ const store = createComponent({
   }
 })
 
-const button = inc => createComponent({
+const button = createComponent({
   _type: 'button',
-  onclick () {
-    store.state.counter += inc
+  state: {
+    counter: 0
   },
-  children: [{ _type: 'text', content: inc > 0 ? 'INC' : 'DEC' }]
+  onclick () {
+    this.state.counter += 1
+  },
+  children: [{ _type: 'text', content: 'INC' }]
 })
 
 const span = createComponent({
   _type: 'span',
   children: [
-    button(1),
-    button(-1),
     {
       _type: 'text',
-      __content: () => store.state.counter
+      __content: () => button.state.counter
     }
   ]
-}, store)
+}, button)
 
 
 const div = createComponent({
@@ -37,16 +38,51 @@ const div = createComponent({
       {
         _type: 'text',
         content: id
-      }
+      },
+      button
     ]
   }))
 }, store)
 
+const input = createComponent({
+  _type: 'input',
+  value: '',
+  onchange (e) {
+    this.value = e.target.value
+  }
+})
 
-setTimeout(() => {
-  store.state.data = [1, 2, 3, 4, 5]
-}, 2000)
+const add = createComponent({
+  _type: 'button',
+  onclick () {
+    console.log(input.value)
+    ul.state.values.push(input.value)
+    input.value = ''
+  },
+  children: [{ _type: 'text', content: 'ADD' }]
+})
 
+const ul = createComponent({
+  _type: 'ul',
+  state: {
+    values: []
+  },
+  __children () {
+    return this.state.values.map(v => ({
+      _type: 'li',
+      children: [{ _type: 'text', content: v }]
+    }))
+  }
+})
+
+const root = createComponent({
+  _type: 'div',
+  children: [
+    input,
+    add,
+    ul
+  ]
+})
 
 const container = document.querySelector('#root')
-renderApp(container, [div, span])
+renderApp(container, [root])

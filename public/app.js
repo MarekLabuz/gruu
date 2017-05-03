@@ -15,7 +15,7 @@ function domModificator ({ parent, component, key, value }) {
     return -1
   }
 
-  if (doesntExist(component[key])) {
+  if (doesntExist(component[key]) && value._type) {
     const newComponent = createComponent(value).noProxy
 
     if (key === component.length) {
@@ -89,6 +89,18 @@ const handler = (object, id, ...k) => ({
   },
   set (target, key, value) {
     domModificator({ component: target, key, value })
+
+    Object.keys(object).forEach((param) => {
+      if (param.startsWith('__')) {
+        const newParam = param.replace('__', '')
+        domModificator({
+          component: object,
+          key: newParam,
+          value: object[param]()
+        })
+      }
+    })
+
     Object.keys(registered[id] || {}).forEach((listenerId) => {
       Object.keys(registered[id][listenerId] || {}).forEach((param) => {
         const paramKey = `__${param}`
@@ -99,6 +111,8 @@ const handler = (object, id, ...k) => ({
         })
       })
     })
+
+    return true
   }
 })
 
@@ -139,6 +153,12 @@ const recursivelyCreateComponent = ({ id, head, watchers, children, parent }) =>
     }
 
     Object.keys(component).forEach((key) => {
+      component[key] = typeof component[key] === 'function'
+        ? component[key].bind(new Proxy(component, handler(component, id)))
+        : component[key]
+    })
+
+    Object.keys(component).forEach((key) => {
       if (key.startsWith('__')) {
         const newKey = key.replace('__', '')
         const watchersIds = watchers.map(watcher => watcher.noProxy._id)
@@ -155,9 +175,6 @@ const recursivelyCreateComponent = ({ id, head, watchers, children, parent }) =>
       ? document.createTextNode(component.content)
       : createElement(component)
 
-    Object.keys(component).forEach((key) => {
-      component[key] = typeof component[key] === 'function' ? component[key].bind(component) : component[key]
-    })
 
     if (component.parent) {
       component.parent = parent
