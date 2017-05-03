@@ -10,6 +10,7 @@
     "no-underscore-dangle": 0
   },
   "globals": {
-    "createApp": true
+    "renderApp": true,
+    "createComponent": true
   }
 }

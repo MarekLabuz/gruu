@@ -1,224 +1,200 @@
-let proxyElements
-let elements
-
-const find = (root, k) => k.reduce((acc, key) => ({
-  modifyTree: acc.modifyTree,
-  elem: acc.elem && acc.elem[key],
-  elemParent: acc.elem
-}), { modifyTree: true, elem: root, elemParent: null })
-
-function recursivelyRenderElements (root, elems = [], replaceWith = []) {
-  return elems.forEach((elem, i) => {
-    if (replaceWith[i]) {
-      root.replaceChild(elem.node, replaceWith[i])
-    } else {
-      root.appendChild(elem.node)
-    }
-    if (elem.children) {
-      recursivelyRenderElements(elem.node, elem.children, [])
-    }
-
-    return elem
-  })
-}
-
-const treeModificationsHandler = ({ modifyTree, elem, elemParent, target, name, value }) => {
-  const { _type } = (value || {})
-
-  if (!modifyTree || name === 'state' || name === '_indexes') {
-    target[name] = value
-    return true
-  }
-
-  if (Array.isArray(value) && value.every(({ _type }) => _type)) {
-    target[name] = value
-    const elems = recursivelyCreateElements(elemParent, value)
-    recursivelyRenderElements(elem, elems, elem[name])
-    // setTimeout(() => rebuildIndexes(__root), 0)
-    return true
-  }
-
-  if (_type) {
-    const elems = recursivelyCreateElements(elemParent, [value], elemParent._indexes)
-    target[name] = elems[0]
-    recursivelyRenderElements(elemParent.node, elems, [elem[name].node])
-    // setTimeout(() => rebuildIndexes(elemParent), 0)
-    return true
-  }
-
-  if (value === null) {
-    elem[name].node.remove()
-    target.splice(name, 1)
-    setTimeout(() => rebuildIndexes(elemParent.node), 0)
-    return true
-  }
-
-  target[name] = value
-
-  const node = (elem.node || elem)
-
-  switch (name) {
-    case 'content':
-      node.textContent = value
-      break
-    default:
-      node[name] = value
-  }
-  return true
-}
-
 const registered = {}
 
-const handler = (root, ...k) => ({
-  get (target, key) {
-    return typeof target[key] === 'object' && target[key] !== null
-      ? new Proxy(target[key], handler(root, ...k, key))
-      : target[key]
-  },
-  set: (target, name, value) => {
-    const { modifyTree, elem, elemParent } = find(root, k)
+const doesntExist = v => v === null || v === undefined
 
-    Object.keys(registered).forEach((key) => {
-      if ([...k, name].includes('state')) {
-        const [nodeAccess, stateAccess] = [...k, name].join(',').split('state').map(v => v.split(',').filter(i => i))
-        const { elem: elemTarget } = find(elements, nodeAccess)
-        const id = `${elemTarget._indexes.join(',')}|${stateAccess.join(',')}`
-        if (id === key) {
-          registered[key].forEach((item) => {
-            Object.keys(item).forEach((prop) => {
+function domModificator ({ parent, component, key, value }) {
+  if ((typeof key === 'string' && key.startsWith('_')) ||
+    (doesntExist(component[key]) && doesntExist(value)) ||
+    key === 'node') {
+    return 0
+  }
 
-              console.log({
-                modifyTree: true,
-                elem: item[prop].elem.node,
-                elemParent: item[prop].elem.parent,
-                target: item[prop].elem,
-                name: prop,
-                value: item[prop].func(value)
-              })
-              treeModificationsHandler({
-                modifyTree: true,
-                elem: item[prop].elem.node,
-                elemParent: item[prop].elem.parent,
-                target: item[prop].elem,
-                name: prop,
-                value: item[prop].func(value)
-              })
-            })
-          })
-        }
-      }
+  if (doesntExist(value)) {
+    component[key].node.remove()
+    component.splice(key, 1)
+    return -1
+  }
+
+  if (doesntExist(component[key])) {
+    const newComponent = createComponent(value).noProxy
+
+    if (key === component.length) {
+      component[key] = newComponent
+      recursivelyRenderComponents({ root: parent.node, children: [component[key]] })
+    } else if (key < component.length) {
+      parent.node.replaceChild(component[key].node, newComponent.node)
+      component[key] = newComponent
+    }
+    return 0
+  }
+
+  if (Array.isArray(value) && value.every(v => v._type)) {
+    const lengthDiff = component[key].length - value.length
+    const values = value.concat(Array(lengthDiff < 0 ? 0 : lengthDiff).fill(null))
+    for (let i = 0; i < values.length; i += 1) {
+      i += domModificator({ parent: component, component: component[key], key: i, value: values[i] }) || 0
+    }
+    return 0
+  }
+
+  if (value._type) {
+    Object.keys(value).forEach((valueKey) => {
+      domModificator({ parent: component, component: component[key], key: valueKey, value: value[valueKey] })
     })
+    return 0
+  }
 
-    // console.log({ modifyTree, elem, elemParent, target, name, value })
+  if (component[key] !== value && typeof value !== 'function') {
+    component[key] = value
+    switch (key) {
+      case 'children':
+        value.forEach((v, i) => {
+          domModificator({ parent: component, component: component[key], key: i, value: v })
+        })
+        break
+      case 'content':
+        component.node.textContent = value
+        break
+      default:
+        if (component.node) {
+          component.node[key] = value
+        }
+    }
+  }
+  return 0
+}
 
-    return treeModificationsHandler({ modifyTree, elem, elemParent, target, name, value })
+const getId = () => {
+  const id = Math.max(0, ...Object.keys(registered)) + 1
+  registered[id] = {}
+  return id
+}
+
+const handlerListener = (object, path) => ({
+  set (target, key, value) {
+    target[key] = value
   }
 })
 
-function objectSpread (root, parent, object, ...omitProps) {
-  return Object.keys(object).reduce((acc, key) => (
-    Object.assign(
-      {},
-      acc,
-      omitProps.includes(key)
-        ? {}
-        : { [key]: object[key] }
-    )
-  ), {})
-}
+const handler = (object, id, ...k) => ({
+  get (target, key) {
+    if (key === 'noProxy') {
+      return target
+    }
 
-function createElementWithProperties (item, parent) {
-  const { _type } = item
-  const elem = document.createElement(_type)
-  const properties = objectSpread(elem, parent, item, '_type', '_updateWith', 'content', 'children', 'state')
-  if (properties) {
-    Object.keys(properties).forEach((key) => {
-      switch (key) {
-        case 'style':
-          Object.keys(properties[key]).forEach((cssProp) => {
-            elem.style[cssProp] = properties[key][cssProp]
-          })
-          break
-        default:
-          elem[key] = properties[key]
-      }
+    if (typeof target[key] === 'object') {
+      return new Proxy(target[key], handler(object, id, ...k, key))
+    }
+    return target[key]
+  },
+  set (target, key, value) {
+    domModificator({ component: target, key, value })
+    Object.keys(registered[id] || {}).forEach((listenerId) => {
+      Object.keys(registered[id][listenerId] || {}).forEach((param) => {
+        const paramKey = `__${param}`
+        domModificator({
+          component: registered[id][listenerId][param],
+          key: param,
+          value: registered[id][listenerId][param][paramKey]()
+        })
+      })
     })
   }
-  return elem
+})
+
+const createElement = (component) => {
+  const { _type } = component
+  const node = document.createElement(_type)
+  Object.keys(component).forEach((key) => {
+    if (key.startsWith('_')) {
+      return
+    }
+    switch (key) {
+      case 'style':
+        Object.keys(component[key]).forEach((cssProp) => {
+          node.style[cssProp] = component[key][cssProp]
+        })
+        break
+      case 'children':
+      case 'state':
+        return
+      default:
+        node[key] = component[key]
+    }
+  })
+  return node
 }
 
-function rebuildIndexes (structure = [], indexes = []) {
-  (!Array.isArray(structure) ? [] : structure).forEach((elem, i) => {
-    const { children, _updateWith } = elem
-    const prevIndexes = elem._indexes
-    elem._indexes = [...indexes, i]
-    if (_updateWith && prevIndexes !== elem._indexes) {
-      Object.keys(_updateWith).forEach((key) => {
-        if (_updateWith[key].includes('state')) {
-          const path = _updateWith[key].split('.').reduce((acc, curr) => {
-            if (/\[.+]/.test(curr)) {
-              const [array, index] = curr.split('[')
-              return [...acc, array, index.replace(']', '')]
-            }
-            return [...acc, curr]
-          }, [])
-          const [nodeAccess, stateAccess] = path.join(',').split('state')
-            .map(v => v.split(',').filter(k => k))
-          const [location, ...restNodeAccess] = nodeAccess
-          const { elem: elemTarget } = find(location === 'this' ? elem : elements, restNodeAccess)
-          const { elem: value } = find(location === 'this' ? elem : elements, path.slice(1))
-          const id = `${elemTarget._indexes.join(',')}|${stateAccess.join(',')}`
-          registered[id] = [...(registered[id] || []), { [key]: { elem, func: elem[key] } }]
+const recursivelyCreateComponent = ({ id, head, watchers, children, parent }) => {
+  return children.map((object) => {
+    if (object.node) {
+      return object
+    }
 
-          treeModificationsHandler({
-            modifyTree: true,
-            elem: elem.node,
-            elemParent: elem.parent.node,
-            target: elem,
-            name: key,
-            value: elem[key](value)
+    const component = object
+    const { _type } = component
+
+    if (head) {
+      component._id = id
+    }
+
+    Object.keys(component).forEach((key) => {
+      if (key.startsWith('__')) {
+        const newKey = key.replace('__', '')
+        const watchersIds = watchers.map(watcher => watcher.noProxy._id)
+        watchersIds.forEach((watcherId) => {
+          registered[watcherId] = Object.assign({}, registered[watcherId], {
+            [id]: Object.assign({}, (registered[watcherId] || {})[id], { [newKey]: component })
           })
-        }
+        })
+        component[newKey] = key.startsWith('__') ? component[key]() : component[key]
+      }
+    })
+
+    component.node = _type === 'text'
+      ? document.createTextNode(component.content)
+      : createElement(component)
+
+    Object.keys(component).forEach((key) => {
+      component[key] = typeof component[key] === 'function' ? component[key].bind(component) : component[key]
+    })
+
+    if (component.parent) {
+      component.parent = parent
+    }
+
+    if (component.children && Array.isArray(component.children)) {
+      component.children = recursivelyCreateComponent({
+        id,
+        head: false,
+        watchers,
+        children: component.children,
+        parent: component
       })
     }
 
-    rebuildIndexes(children, elem._indexes)
+    return component
   })
 }
 
-function recursivelyCreateElements (parent, structure = []) {
-  return (!Array.isArray(structure) ? [] : structure).map((node) => {
-    const { _type } = node
+const createComponent = (object, ...watchers) => {
+  const id = getId()
+  const component = recursivelyCreateComponent({ id, head: true, watchers, children: [object], parent: null })[0]
+  return new Proxy(component, handler(component, id))
+}
 
-    const newElem = node
-    Object.keys(newElem).forEach((key) => {
-      newElem[key] = (typeof newElem[key] === 'function')
-        ? newElem[key].bind(new Proxy(newElem, handler(newElem)))
-        : newElem[key]
-    })
-
-    newElem.node = _type === 'text'
-      ? document.createTextNode(newElem.content)
-      : createElementWithProperties(newElem, parent)
-
-    newElem.parent = parent
-    newElem.children = recursivelyCreateElements(newElem, newElem.children)
-
-    return newElem
+const recursivelyRenderComponents = ({ root, children }) => {
+  children.forEach((component) => {
+    const componentNode = component.noProxy ? component.noProxy.node : component.node
+    const componentChildren = component.noProxy ? component.noProxy.children : component.children
+    root.appendChild(componentNode)
+    if (componentChildren) {
+      recursivelyRenderComponents({ root: componentNode, children: componentChildren })
+    }
   })
 }
 
-function createApp (root, structure) { // eslint-disable-line no-unused-vars
-  elements = recursivelyCreateElements(root, structure)
-  setTimeout(() => rebuildIndexes(elements), 0)
-  setTimeout(() => recursivelyRenderElements(root, elements))
-  proxyElements = new Proxy(elements, handler(elements))
-  return proxyElements
+const renderApp = (root, children) => {
+  recursivelyRenderComponents({ root, children })
 }
 
-// function createComponent (object) {
-//   object.isProxy = true
-//   const elems = recursivelyCreateElements(root, [object])
-//   setTimeout(() => rebuildIndexes(elems), 0)
-//   return new Proxy(elems, handler(elems))[0]
-// }
