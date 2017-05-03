@@ -1,0 +1,13 @@
+.questions-container {
+    position: fixed;
+    height: 100vh;
+    width: auto;
+    display: flex;
+    transition: left 1s ease;
+    z-index: 1;
+}
+
+.question {
+    width: 100vw;
+    height: 100vh;
+}

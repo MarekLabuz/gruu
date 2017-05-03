@@ -47,6 +47,11 @@ function domModificator ({ parent, component, key, value }) {
   if (component[key] !== value && typeof value !== 'function') {
     component[key] = value
     switch (key) {
+      case 'style':
+        Object.keys(value).forEach((param) => {
+          component.node.style[param] = value[param]
+        })
+        break
       case 'children':
         value.forEach((v, i) => {
           domModificator({ parent: component, component: component[key], key: i, value: v })
@@ -176,7 +181,7 @@ const recursivelyCreateComponent = ({ id, head, watchers, children, parent }) =>
       : createElement(component)
 
 
-    if (component.parent) {
+    if (parent) {
       component.parent = parent
     }
 
