@@ -1,3 +1,5 @@
+const userAnswers = {}
+
 const questionsContainer = createComponent({
   _type: 'div',
   className: 'questions-container',
@@ -11,27 +13,98 @@ const questionsContainer = createComponent({
     }
   },
   __children () {
-    return this.state.questions.map(question => ({
-      _type: 'div',
-      className: 'question',
-      children: [{ _type: 'text', content: question.text }]
-    }))
+    return this.state.questions
   }
 })
 
 const button = change => createComponent({
   _type: 'button',
-  style: { zIndex: 100, position: 'fixed', left: `calc(50% + ${change * 50}px)`, top: '50%' },
+  className: change > 0 ? 'button-next' : 'button-prev',
   onclick () {
-    questionsContainer.state.currentQuestion += change
+    const cQ = questionsContainer.state.currentQuestion
+    const q = questionsContainer.state.questions
+    if ((cQ < q.length - 1 && change > 0) || (cQ > 0 && change < 0)) {
+      questionsContainer.state.currentQuestion += change
+    }
   },
   children: [{ _type: 'text', content: change > 0 ? 'NEXT' : 'PREV' }]
 })
 
+const buttonsContainer = (index, length) => createComponent({
+  _type: 'div',
+  className: 'buttons-container',
+  children: [index !== 0 && button(-1), index < length - 1 && button(1)]
+})
+
+const createAnswer = (answer, questionId) => createComponent({
+  _type: 'label',
+  style: { display: 'flex', alignItems: 'center' },
+  children: [
+    {
+      _type: 'input',
+      type: 'radio',
+      name: `answer-${questionId}`,
+      onchange () {
+        userAnswers[questionId] = answer.id
+        console.log(userAnswers)
+      }
+    },
+    {
+      _type: 'span',
+      children: [{ _type: 'text', content: answer.text }]
+    }
+  ]
+})
+
+const questionText = question => createComponent({
+  _type: 'div',
+  className: 'question-text',
+  children: [
+    { _type: 'span', children: [{ _type: 'text', content: question.text }] },
+    {
+      _type: 'div',
+      style: { display: 'flex', flexDirection: 'column' },
+      children: question.answers.map(v => createAnswer(v, question.id))
+    }
+  ]
+})
+
+const createQuestion = (question, index, length) => createComponent({
+  _type: 'div',
+  className: 'question',
+  children: [
+    questionText(question),
+    buttonsContainer(index, length)
+  ]
+})
+
+const exitButton = createComponent({
+  _type: 'button',
+  className: 'exit-button',
+  onclick () {
+    questionsContainer.state.currentQuestion = questionsContainer.state.questions.length
+  },
+  children: [{ _type: 'text', content: 'EXIT' }]
+})
+
+const navigationButton = content => createComponent({
+  _type: 'button',
+  children: [{ _type: 'text', content }]
+})
+
+const questionsNavigation = createComponent({
+  _type: 'div',
+  className: 'questions-navigation',
+  __children () {
+    console.log(questionsContainer.state)
+    return questionsContainer.state.questions.map((question, i) => navigationButton(i + 1))
+  }
+}, questionsContainer)
+
 const root = createComponent({
   _type: 'div',
   className: 'root',
-  children: [questionsContainer, button(1), button(-1)]
+  children: [questionsContainer, questionsNavigation, exitButton]
 })
 
 const container = document.querySelector('#root')
@@ -41,7 +114,8 @@ const getQuestions = () => {
   fetch('/questions.json')
     .then(response => response.json())
     .then((data) => {
-      questionsContainer.state.questions = data
+      const length = data.length
+      questionsContainer.state.questions = data.map((q, i) => createQuestion(q, i, length))
     })
 }
 

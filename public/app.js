@@ -1,11 +1,13 @@
-const registered = {}
-
 const doesntExist = v => v === null || v === undefined
 
-function domModificator ({ parent, component, key, value }) {
+function domModificator ({ parent: p, component: c, key: k, value: v }) {
+  const value = !v ? v : v.noProxy || v
+  const parent = !p ? p : p.noProxy || p
+  const component = !c ? c : c.noProxy || c
+  const key = !k ? k : k.noProxy || k
+
   if ((typeof key === 'string' && key.startsWith('_')) ||
-    (doesntExist(component[key]) && doesntExist(value)) ||
-    key === 'node') {
+    (doesntExist(component[key]) && doesntExist(value))) {
     return 0
   }
 
@@ -15,7 +17,7 @@ function domModificator ({ parent, component, key, value }) {
     return -1
   }
 
-  if (doesntExist(component[key]) && value._type) {
+  if (doesntExist(component[key]) && value._type && parent.node) {
     const newComponent = createComponent(value).noProxy
 
     if (key === component.length) {
@@ -37,16 +39,19 @@ function domModificator ({ parent, component, key, value }) {
     return 0
   }
 
-  if (value._type) {
+  if (value._type && parent.node) {
     Object.keys(value).forEach((valueKey) => {
-      domModificator({ parent: component, component: component[key], key: valueKey, value: value[valueKey] })
+      domModificator({ parent, component: component[key], key: valueKey, value: value[valueKey] })
     })
     return 0
   }
 
   if (component[key] !== value && typeof value !== 'function') {
-    component[key] = value
     switch (key) {
+      case 'node':
+        parent.node.replaceChild(value, component.node)
+        component.node = value
+        break
       case 'style':
         Object.keys(value).forEach((param) => {
           component.node.style[param] = value[param]
@@ -65,14 +70,9 @@ function domModificator ({ parent, component, key, value }) {
           component.node[key] = value
         }
     }
+    component[key] = value
   }
   return 0
-}
-
-const getId = () => {
-  const id = Math.max(0, ...Object.keys(registered)) + 1
-  registered[id] = {}
-  return id
 }
 
 const handlerListener = (object, path) => ({
@@ -81,41 +81,38 @@ const handlerListener = (object, path) => ({
   }
 })
 
-const handler = (object, id, ...k) => ({
+const handler = (object, head, ...k) => ({
   get (target, key) {
     if (key === 'noProxy') {
       return target
     }
 
     if (typeof target[key] === 'object') {
-      return new Proxy(target[key], handler(object, id, ...k, key))
+      return new Proxy(target[key], handler(object, head, ...k, key))
     }
     return target[key]
   },
   set (target, key, value) {
     domModificator({ component: target, key, value })
 
-    Object.keys(object).forEach((param) => {
-      if (param.startsWith('__')) {
-        const newParam = param.replace('__', '')
-        domModificator({
-          component: object,
-          key: newParam,
-          value: object[param]()
-        })
-      }
-    })
+    if (object.rerender) {
+      clearTimeout(object.rerender)
+    }
 
-    Object.keys(registered[id] || {}).forEach((listenerId) => {
-      Object.keys(registered[id][listenerId] || {}).forEach((param) => {
-        const paramKey = `__${param}`
-        domModificator({
-          component: registered[id][listenerId][param],
-          key: param,
-          value: registered[id][listenerId][param][paramKey]()
-        })
+    object.rerender = setTimeout(() => {
+      Object.keys(object).forEach((param) => {
+        if (param.startsWith('__')) {
+          const newParam = param.replace('__', '')
+          console.log('rerender')
+          domModificator({
+            component: object,
+            key: newParam,
+            value: object[param]()
+          })
+        }
       })
-    })
+      Object.keys(object.registered).forEach(key => object.registered[key]())
+    }, 0)
 
     return true
   }
@@ -144,33 +141,36 @@ const createElement = (component) => {
   return node
 }
 
-const recursivelyCreateComponent = ({ id, head, watchers, children, parent }) => {
+const recursivelyCreateComponent = ({ head, watchers, children, parent }) => {
   return children.map((object) => {
-    if (object.node) {
+    if (!object || object.node) {
       return object
     }
 
     const component = object
     const { _type } = component
 
-    if (head) {
-      component._id = id
-    }
+    component.registered = {}
 
     Object.keys(component).forEach((key) => {
       component[key] = typeof component[key] === 'function'
-        ? component[key].bind(new Proxy(component, handler(component, id)))
+        ? component[key].bind(new Proxy(component, handler(component, head || component)))
         : component[key]
     })
 
     Object.keys(component).forEach((key) => {
       if (key.startsWith('__')) {
         const newKey = key.replace('__', '')
-        const watchersIds = watchers.map(watcher => watcher.noProxy._id)
-        watchersIds.forEach((watcherId) => {
-          registered[watcherId] = Object.assign({}, registered[watcherId], {
-            [id]: Object.assign({}, (registered[watcherId] || {})[id], { [newKey]: component })
-          })
+        watchers.forEach((watcher) => {
+          if (component._id) {
+            watcher.noProxy.registered[component._id] = () => {
+              domModificator({
+                component,
+                key: newKey,
+                value: component[key]()
+              })
+            }
+          }
         })
         component[newKey] = key.startsWith('__') ? component[key]() : component[key]
       }
@@ -187,8 +187,7 @@ const recursivelyCreateComponent = ({ id, head, watchers, children, parent }) =>
 
     if (component.children && Array.isArray(component.children)) {
       component.children = recursivelyCreateComponent({
-        id,
-        head: false,
+        head: head || component,
         watchers,
         children: component.children,
         parent: component
@@ -200,13 +199,15 @@ const recursivelyCreateComponent = ({ id, head, watchers, children, parent }) =>
 }
 
 const createComponent = (object, ...watchers) => {
-  const id = getId()
-  const component = recursivelyCreateComponent({ id, head: true, watchers, children: [object], parent: null })[0]
-  return new Proxy(component, handler(component, id))
+  const component = recursivelyCreateComponent({ watchers, children: [object], parent: null })[0]
+  return new Proxy(component, handler(component, component))
 }
 
 const recursivelyRenderComponents = ({ root, children }) => {
   children.forEach((component) => {
+    if (!component) {
+      return
+    }
     const componentNode = component.noProxy ? component.noProxy.node : component.node
     const componentChildren = component.noProxy ? component.noProxy.children : component.children
     root.appendChild(componentNode)
@@ -219,4 +220,3 @@ const recursivelyRenderComponents = ({ root, children }) => {
 const renderApp = (root, children) => {
   recursivelyRenderComponents({ root, children })
 }
-
