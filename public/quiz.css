@@ -47,6 +47,8 @@
 
 .questions-navigation {
     position: fixed;
+    z-index: 100;
     top: 200px;
     left: 50%;
+    transform: translate(-50%);
 }

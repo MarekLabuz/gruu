@@ -1,7 +1,6 @@
 const input = createComponent({
   _type: 'input',
-  value: '',
-  onkeydown (e) {
+  onkeyup (e) {
     this.value = e.target.value
   }
 })
@@ -53,14 +52,17 @@ const table = createComponent({
     data: [[]]
   },
   __children () {
+    // console.log(this.state.data.map((v, i) => (v || []).map(t => t)))
     return this.state.data.map((row, i) => ({
       _type: 'tr',
       onclick () {
         this.style = { backgroundColor: 'red' }
       },
-      children: row.map((col, j) => ({
+      children: (row || []).map((col, j) => ({
         _type: 'td',
-        children: [createComponent({ _id: `${i}-${j}`, _type: 'text', __content: () => input.value || col }, input)]
+        children: [
+          createComponent({ _id: `${i}-${j}`, _type: 'text', __content: () => input.value || col }, input)
+        ]
       }))
     }))
   }
@@ -69,31 +71,28 @@ const table = createComponent({
 setTimeout(() => {
   const start = +new Date()
   console.log(start)
-  const array = []
-  for (let i = 0; i < 1000; i++) {
-    array.push([`test ${i}`, `test ${i}`, `test ${i}`, `test ${i}`, `test ${i}`, `test ${i}`, `test ${i}`])
+  // const array = []
+  for (let i = 0; i < 1000; i += 1) {
+    table.state.data[i] = [`test ${i}`, `test ${i}`, `test ${i}`, `test ${i}`, `test ${i}`, `test ${i}`, `test ${i}`]
   }
-  table.state.data = array
+  // table.state.data = array
 
   setTimeout(() => {
-    console.log('sdfsdf', +new Date() - start)
-    // console.log('teraz')
-    // const start = +new Date()
-    // table.state.data = []
-    // for(let i = 0; i < 1000; i += 10) {
-    //   table.state.data[i] = ['sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf']
-    // }
-    // console.log(+new Date() - start)
-  })
-  // setTimeout(() => {
-  //   const start2 = +new Date()
-  //   console.log(start)
-  //   const row = table.state.data[0]
-  //   table.state.data[0] = table.state.data[10]
-  //   table.state.data[10] = row
-  //   console.log(+new Date() - start2)
-  // }, 2000)
+    table.state.data = []
+  }, 1500)
 
+  setTimeout(() => {
+    console.log('teraz')
+    const start = +new Date()
+    for(let i = 0; i < 1000; i += 1) {
+      table.state.data[i] = ['sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf']
+    }
+    console.log(+new Date() - start)
+  }, 3000)
+
+  setTimeout(() => {
+    table.state.data[27] = ['aaaaaaa', 'aaaaaaa', 'aaaaaaa', 'aaaaaaa', 'aaaaaaa', 'aaaaaaa', 'aaaaaaa']
+  }, 4500)
 })
 
 

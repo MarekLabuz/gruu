@@ -87,24 +87,27 @@ const exitButton = createComponent({
   children: [{ _type: 'text', content: 'EXIT' }]
 })
 
-const navigationButton = content => createComponent({
+const navigationButton = index => createComponent({
   _type: 'button',
-  children: [{ _type: 'text', content }]
+  children: [{ _type: 'text', content: index + 1 }],
+  onclick () {
+    questionsContainer.state.currentQuestion = index
+  }
 })
 
-const questionsNavigation = createComponent({
+const questionsNavigation = () => createComponent({
   _type: 'div',
+  _id: 'questionsNavigation',
   className: 'questions-navigation',
   __children () {
-    console.log(questionsContainer.state)
-    return questionsContainer.state.questions.map((question, i) => navigationButton(i + 1))
+    return questionsContainer.state.questions.map((question, i) => navigationButton(i))
   }
 }, questionsContainer)
 
 const root = createComponent({
   _type: 'div',
   className: 'root',
-  children: [questionsContainer, questionsNavigation, exitButton]
+  children: [questionsContainer, questionsNavigation(), exitButton]
 })
 
 const container = document.querySelector('#root')
