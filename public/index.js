@@ -14,7 +14,7 @@ const ul = createComponent({
     return this.state.values.map((v, i) => ({
       _type: 'li',
       children: [
-        { _type: 'text', content: v },
+        { _type: 'input', value: v },
         {
           _type: 'button',
           onclick: () => ul.state.values.splice(i, 1),
@@ -41,7 +41,7 @@ const div = createComponent({
     children: [{
       _id: 'inputText',
       _type: 'text',
-      __content: () => `Input: ${input.value}`
+      __content: () => `Input: ${input.value || ''}`
     }]
   }]
 }, input)
@@ -83,11 +83,11 @@ setTimeout(() => {
 
   setTimeout(() => {
     console.log('teraz')
-    const start = +new Date()
-    for(let i = 0; i < 1000; i += 1) {
+    const start2 = +new Date()
+    for (let i = 0; i < 1000; i += 10) {
       table.state.data[i] = ['sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf']
     }
-    console.log(+new Date() - start)
+    console.log(+new Date() - start2)
   }, 3000)
 
   setTimeout(() => {

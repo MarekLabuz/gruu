@@ -6,7 +6,6 @@
     "browser": true
   },
   "rules": {
-    "func-names": 0,
     "no-underscore-dangle": 0
   },
   "globals": {

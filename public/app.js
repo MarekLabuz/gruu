@@ -13,7 +13,9 @@ function domModificator ({ parent: p, component: c, key: k, value: v, anyway }) 
   }
 
   if (doesntExist(value)) {
-    component[key] && component[key].node && component[key].node.remove()
+    if (component[key] && component[key].node) {
+      component[key].node.remove()
+    }
     component[key] = undefined
     return 0
   }
@@ -49,7 +51,7 @@ function domModificator ({ parent: p, component: c, key: k, value: v, anyway }) 
     return 0
   }
 
-  if (anyway || component[key] !== value && typeof value !== 'function') {
+  if (anyway || (component[key] !== value && typeof value !== 'function')) {
     switch (key) {
       case 'style':
         Object.keys(value).forEach((param) => {
@@ -57,8 +59,8 @@ function domModificator ({ parent: p, component: c, key: k, value: v, anyway }) 
         })
         break
       case 'children':
-        value.forEach((v, i) => {
-          domModificator({ parent: component, component: component[key], key: i, value: v })
+        value.forEach((val, i) => {
+          domModificator({ parent: component, component: component[key], key: i, value: val })
         })
         break
       case 'content':
@@ -73,12 +75,6 @@ function domModificator ({ parent: p, component: c, key: k, value: v, anyway }) 
   }
   return 0
 }
-
-const handlerListener = (object, path) => ({
-  set (target, key, value) {
-    target[key] = value
-  }
-})
 
 const handler = (object, head, ...k) => ({
   get (target, key) {
@@ -194,7 +190,7 @@ const recursivelyCreateComponent = ({ head, watchers, children, parent }) => {
         ? document.createTextNode(component.content)
         : createElement(component)
     } else {
-      Object.keys(component).forEach(key => {
+      Object.keys(component).forEach((key) => {
         domModificator({
           parent: component.parent,
           component,
