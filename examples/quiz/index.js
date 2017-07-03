@@ -114,7 +114,7 @@ const container = document.querySelector('#root')
 renderApp(container, [root])
 
 const getQuestions = () => {
-  fetch('/questions.json')
+  fetch('/examples/quiz/questions.json')
     .then(response => response.json())
     .then((data) => {
       const length = data.length

@@ -69,32 +69,24 @@ const table = createComponent({
 })
 
 setTimeout(() => {
-  const start = +new Date()
-  console.log(start)
-  // const array = []
   for (let i = 0; i < 1000; i += 1) {
     table.state.data[i] = [`test ${i}`, `test ${i}`, `test ${i}`, `test ${i}`, `test ${i}`, `test ${i}`, `test ${i}`]
   }
-  // table.state.data = array
 
   setTimeout(() => {
     table.state.data = []
   }, 1500)
 
   setTimeout(() => {
-    console.log('teraz')
-    const start2 = +new Date()
     for (let i = 0; i < 1000; i += 10) {
       table.state.data[i] = ['sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf']
     }
-    console.log(+new Date() - start2)
   }, 3000)
 
   setTimeout(() => {
     table.state.data[27] = ['aaaaaaa', 'aaaaaaa', 'aaaaaaa', 'aaaaaaa', 'aaaaaaa', 'aaaaaaa', 'aaaaaaa']
   }, 4500)
 })
-
 
 const container = document.querySelector('#root')
 renderApp(container, [input, add, div, ul, table])
