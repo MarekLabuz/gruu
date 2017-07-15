@@ -1,16 +1,8 @@
-// let rootLocation = null
-// const pathDependentComponents = {}
+const s4 = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1) // eslint-disable-line
+
+const guid = () => `${s4()}${s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`
+
 const doesntExist = v => v === null || v === undefined || v === false
-// const matchesPathname = path => new RegExp(`${path.replace(/:[^/]+/g, '[^/]+')}`).test(window.location.pathname)
-// const getParams = (path) => {
-//   if (!path) {
-//     return {}
-//   }
-//   const paramRegex = new RegExp(':.+')
-//   const windowPathname = window.location.pathname.split('/').slice(1)
-//   return path.split('/').slice(1).reduce((acc, curr, i) =>
-//     Object.assign({}, acc, paramRegex.test(curr) ? { [curr.replace(':', '')]: windowPathname[i] } : {}), {})
-// }
 
 function domModificator ({ parent: p, component: c, key: k, value: v, anyway }) {
   const value = !v ? v : v.noProxy || v
@@ -22,6 +14,12 @@ function domModificator ({ parent: p, component: c, key: k, value: v, anyway }) 
     (doesntExist(value) && doesntExist(component[key])) ||
     key === 'node') {
     return 0
+  }
+
+  if (key === 'length' && value < component.length) {
+    for (let i = value; i < component.length; i += 1) {
+      domModificator({ parent, component, key: i, value: null })
+    }
   }
 
   if (doesntExist(value)) {
@@ -71,7 +69,7 @@ function domModificator ({ parent: p, component: c, key: k, value: v, anyway }) 
     return 0
   }
 
-  if (anyway || (component[key] !== value && typeof value !== 'function')) {
+  if (anyway || (component[key] !== value && typeof value !== 'function' && key !== 'length')) {
     switch (key) {
       case 'style':
         Object.keys(value).forEach((param) => {
@@ -98,27 +96,25 @@ function domModificator ({ parent: p, component: c, key: k, value: v, anyway }) 
   return 0
 }
 
-const handler = (object, head, ...k) => ({
+const handler = (object, parent, ...k) => ({
   get (target, key) {
     if (key === 'noProxy') {
       return target
     }
 
     if (target[key] && typeof target[key] === 'object') {
-      return new Proxy(target[key], handler(object, head, ...k, key))
+      return new Proxy(target[key], handler(object, target._type ? target : parent, ...k, key))
     }
     return target[key]
   },
   set (target, key, value) {
-    domModificator({ component: target, key, value })
+    domModificator({ component: target, key, value, parent })
 
     if (object.rerender) {
       clearTimeout(object.rerender)
     }
 
     object.rerender = setTimeout(() => {
-      // console.log(target[key])
-      // return
       Object.keys(object).forEach((param) => {
         if (param.startsWith('__')) {
           const newParam = param.replace('__', '')
@@ -161,6 +157,8 @@ const createElement = (component) => {
 
 const recursivelyCreateComponent = ({ head, watchers, children, parent }) => {
   return children.map((object) => {
+    object._id = guid()
+
     if (!object) {
       return object
     }
@@ -175,7 +173,7 @@ const recursivelyCreateComponent = ({ head, watchers, children, parent }) => {
 
     Object.keys(component).forEach((key) => {
       component[key] = typeof component[key] === 'function'
-        ? component[key].bind(new Proxy(component, handler(component, head || component)))
+        ? component[key].bind(new Proxy(component, handler(component, component.parent)))
         : component[key]
     })
 
@@ -215,7 +213,11 @@ const recursivelyCreateComponent = ({ head, watchers, children, parent }) => {
       }
     })
 
-    if (modifyNode) {
+    if (parent) {
+      component.parent = parent
+    }
+
+    if (modifyNode && component._type) {
       component.node = _type === 'text'
         ? document.createTextNode(component.content)
         : createElement(component)
@@ -231,16 +233,13 @@ const recursivelyCreateComponent = ({ head, watchers, children, parent }) => {
       })
     }
 
-    if (parent) {
-      component.parent = parent
-    }
-
     if (component.children && Array.isArray(component.children)) {
       component.children = recursivelyCreateComponent({
         head: head || component,
         watchers,
         children: component.children,
-        parent: component
+        // parent: component,
+        parent: component._type ? component : parent
       })
     }
 
@@ -251,7 +250,7 @@ const recursivelyCreateComponent = ({ head, watchers, children, parent }) => {
 const createComponent = (object, ...watchers) => {
   const component = recursivelyCreateComponent({ watchers, children: [object], parent: null })[0]
   component.watchers = watchers
-  return new Proxy(component, handler(component, component))
+  return new Proxy(component, handler(component, component.parent))
 }
 
 const recursivelyRenderComponents = ({ root, children, depth }) => {
@@ -266,7 +265,7 @@ const recursivelyRenderComponents = ({ root, children, depth }) => {
         root.appendChild(componentNode)
       }
       if (componentChildren && depth !== 0) {
-        recursivelyRenderComponents({ root: componentNode, children: componentChildren, depth: depth - 1 })
+        recursivelyRenderComponents({ root: componentNode || root, children: componentChildren, depth: depth - 1 })
       }
     })
   }
@@ -277,37 +276,32 @@ const renderApp = (root, children) => {
   recursivelyRenderComponents({ root, children: [main] })
 }
 
+const browserHistory = createComponent({
+  _id: 'browserHistory',
+  state: {
+    locationPath: window.location.pathname,
+    goTo (path) {
+      browserHistory.state.locationPath = path
+      window.history.pushState(null, null, path)
+    }
+  }
+})
+
+const isPathCorrect = (path, locationPath) => path === locationPath
+
+const route = (id, path, component) => createComponent({
+  _type: 'div',
+  _id: id,
+  __children () {
+    return [isPathCorrect(path, browserHistory.state.locationPath) && component]
+  }
+}, browserHistory)
+
 if (window.__TEST__) {
   module.exports = {
     createComponent,
-    renderApp
+    renderApp,
+    browserHistory,
+    route
   }
 }
-
-// const rerenderByPathname = (path, lastPath) => {
-//   if (path !== lastPath) {
-//     if (!rootLocation) {
-//       rootLocation = path
-//     }
-//     window.history.pushState({ pathname: lastPath }, null, path)
-//     Object.keys(pathDependentComponents).forEach((p) => {
-//       Object.keys(pathDependentComponents[p]).forEach((id) => {
-//         pathDependentComponents[p][id]()
-//       })
-//     })
-//   }
-// }
-
-// window.addEventListener('popstate', (e) => {
-//   const previousPathname = history.state ? history.state.pathname : rootLocation
-//   console.log(window.location.pathname, previousPathname, history.state)
-//   rerenderByPathname(window.location.pathname, previousPathname)
-// })
-
-// const locationManager = {
-//   push (path) {
-//     if (path !== window.location.pathname) {
-//       rerenderByPathname(path, window.location.pathname)
-//     }
-//   }
-// }

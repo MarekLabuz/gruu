@@ -5,6 +5,7 @@
   "main": "server.js",
   "scripts": {
     "test": "jest",
+    "test:watch": "jest --watchAll",
     "start": "node server.js"
   },
   "author": "Marek Łabuz",
