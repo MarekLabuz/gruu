@@ -71,15 +71,36 @@
 // })
 
 
+
+
+
 const ul = createComponent({
   _type: 'ul',
-  children: [
-    { _type: 'li', children: [{ _type: 'text', content: 1 }] },
-    { _type: 'li', children: [{ _type: 'text', content: 2 }] },
-    { _type: 'li', children: [{ _type: 'text', content: 3 }] },
-    { _type: 'li', children: [{ _type: 'text', content: 4 }] }
-  ]
+  state: {
+    counter: 0
+  },
+  $children () {
+    return [
+      { _type: 'li', children: [{ _type: 'text', textContent: this.state.counter }] }
+    ]
+  }
 })
+
+setTimeout(() => {
+  ul.state.counter = 10
+  // ul.children[2] = { _type: 'li', children: [{ _type: 'text', textContent: 8 }] }
+  // ul.children = [
+  //   { _type: 'li', children: [{ _type: 'text', textContent: 1 }] },
+  //   { _type: 'li', children: [{ _type: 'text', textContent: 2 }] },
+  //   { _type: 'li', children: [{ _type: 'text', textContent: 3 }] },
+  //   { _type: 'li', children: [{ _type: 'text', textContent: 4 }] },
+  //   { _type: 'li', children: [{ _type: 'text', textContent: 5 }] },
+  //   { _type: 'li', children: [{ _type: 'text', textContent: 6 }] },
+  //   { _type: 'li', children: [{ _type: 'text', textContent: 7 }] }
+  // ]
+  // ul.children[1].children[0].textContent = 5
+}, 100)
+
 
 // setTimeout(() => {
 //   // const t = ({ _type: 'li', children: [{ _type: 'text', content: 5 }] })

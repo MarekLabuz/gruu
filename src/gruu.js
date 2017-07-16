@@ -247,61 +247,275 @@ const recursivelyCreateComponent = ({ head, watchers, children, parent }) => {
   })
 }
 
-const createComponent = (object, ...watchers) => {
-  const component = recursivelyCreateComponent({ watchers, children: [object], parent: null })[0]
-  component.watchers = watchers
-  return new Proxy(component, handler(component, component.parent))
+
+
+
+
+
+
+
+
+
+
+
+
+
+const stateModificationHandler = ({ object, actions, value }) => {
+  if (actions.length === 0) {
+    object.state = value
+  } else {
+    const [action, ...rest] = actions
+    const v = rest.reduce((acc, key) => acc[key], object.state)
+    v[action] = value
+  }
 }
 
-const recursivelyRenderComponents = ({ root, children, depth }) => {
-  if (children) {
-    children.forEach((component) => {
-      if (!component || (component && component.noProxy && component.noProxy._matchesPath === false)) {
-        return
-      }
-      const componentNode = component.noProxy ? component.noProxy.node : component.node
-      const componentChildren = component.noProxy ? component.noProxy.children : component.children
-      if (componentNode) {
-        root.appendChild(componentNode)
-      }
-      if (componentChildren && depth !== 0) {
-        recursivelyRenderComponents({ root: componentNode || root, children: componentChildren, depth: depth - 1 })
+const childrenModificationHandler = ({ object, actions, value }) => {
+  if (actions.length === 0) {
+    object.children.forEach((child, i) => {
+      if (child && value[i]) {
+        Object.keys(value[i]).forEach((key) => {
+          domModificator2({ object: child, actions: [key], value: value[i][key] })
+        })
+      } else if (!child || !value[i]) {
+        domModificator2({ object, actions: ['children', i], value: value[i] })
       }
     })
+    value.slice(object.children.length).forEach((newChild, i) => {
+      domModificator2({ object, actions: ['children', object.children.length + i], value: newChild })
+    })
+  } else if (!isNaN(parseInt(actions[0], 10))) {
+    const target = object.children[actions[0]]
+    if (target && !value) {
+      target._parent._node.removeChild(target._node)
+      object.children[actions[0]] = value
+    } else if (target && value) {
+      const component = recursivelyCreateComponent2({ object: value })
+      recursivelyRenderComponent({ component })
+
+      Object.keys(component).forEach((key) => {
+        domModificator2({ object: target, actions: [key], value: component[key] })
+      })
+    } else if (!target && value) {
+      const component = recursivelyCreateComponent2({ object: value })
+      recursivelyRenderComponent({ component })
+      component._parent = object
+
+      let index = parseInt(actions[0], 10) + 1
+      for (let i = index; i < object.children.length; i += 1) {
+        if (object.children[i]) {
+          index = i
+          break
+        }
+      }
+
+      object._node.insertBefore(component._node, object.children[index] && object.children[index]._node)
+      object.children[actions[0]] = component
+    }
+  }
+}
+
+const nodeModificationHandler = ({ object, action, actions, value }) => {
+  if (actions.length === 0) {
+    object._node[action] = value
+  } else {
+    const [a, ...rest] = actions
+    const v = rest.reduce((acc, key) => acc[key], object._node[action])
+    v[a] = value
+  }
+}
+
+const domModificator2 = ({ object, actions: [action, ...actions], value }) => {
+  if (action.startsWith('_')) {
+    return
+  }
+
+  switch (action) {
+    case 'state':
+      stateModificationHandler({ object, actions, value })
+      break
+    case 'children':
+      childrenModificationHandler({ object, actions, value })
+      break
+    default:
+      nodeModificationHandler({ object, action, actions, value })
+      break
+  }
+}
+
+
+const handler2 = (object, ...k) => ({
+  get (target, key) {
+    if (key === 'noProxy') {
+      return target
+    }
+
+    const isType = target[key] && target[key]._type
+    const component = isType ? target[key] : target
+
+    if (target[key] && typeof target[key] === 'object') {
+      return new Proxy(target[key], handler2(component, ...(isType ? [] : [...k, key])))
+    }
+
+    return target[key]
+  },
+  set (target, key, value) {
+    const actions = [...k, key]
+    domModificator2({ object, actions, value })
+
+    if (object._rerender) {
+      clearTimeout(object._rerender)
+    }
+    object._rerender = setTimeout(() => {
+      Object.keys(object).forEach((param) => {
+        if (param.startsWith('$')) {
+          const pureKey = param.slice(1)
+          domModificator2({ object, actions: [pureKey], value: object[param]() })
+        }
+      })
+      // Object.keys(object.registered || {}).forEach(id => (object.registered || {})[id]())
+    })
+
+    return true
+  }
+})
+
+const createElement2 = (component) => {
+  const node = document.createElement(component._type)
+  Object.keys(component).forEach((key) => {
+    if (key.startsWith('_') || key.startsWith('$')) {
+      return
+    }
+    switch (key) {
+      case 'style':
+        Object.keys(component[key]).forEach((cssProp) => {
+          node.style[cssProp] = component[key][cssProp]
+        })
+        break
+      case 'children':
+      case 'state':
+        return
+      default:
+        node[key] = component[key]
+    }
+  })
+  return node
+}
+
+const recursivelyCreateComponent2 = ({ object, parent }) => {
+  if (!object) {
+    return object
+  }
+
+  if (object._isRendered) {
+    object.noProxy._parent = parent
+    return object
+  }
+
+  const component = object
+  component._id = guid()
+  component._parent = parent
+
+  Object.keys(component).forEach((key) => {
+    component[key] = typeof component[key] === 'function'
+      ? component[key].bind(new Proxy(component, handler2(component)))
+      : component[key]
+  })
+
+  Object.keys(component).forEach((key) => {
+    if (key.startsWith('$')) {
+      const pureKey = key.slice(1)
+      component[pureKey] = component[key]()
+    }
+  })
+
+  if (component._type) {
+    component._node = component._type === 'text'
+      ? document.createTextNode(component.textContent)
+      : createElement2(component)
+  }
+
+  if (component.children && Array.isArray(component.children)) {
+    component.children = component.children.map(child => recursivelyCreateComponent2({
+      object: child,
+      parent: component._type ? component : parent
+    }))
+  }
+
+  component._isRendered = true
+  return component
+}
+
+const createComponent = (object, ...watchers) => {
+  const component = recursivelyCreateComponent2({ object, watchers })
+  return new Proxy(component, handler2(component))
+}
+
+const recursivelyRenderComponent = ({ component }) => {
+  const pureComponent = component && (component.noProxy || component)
+
+  if (pureComponent) {
+    if (pureComponent._node && pureComponent._parent) {
+      pureComponent._parent._node.appendChild(pureComponent._node)
+    }
+
+    if (pureComponent.children) {
+      pureComponent.children.forEach((child) => {
+        recursivelyRenderComponent({ component: child })
+      })
+    }
   }
 }
 
 const renderApp = (root, children) => {
-  const main = createComponent({ _type: 'div', children })
-  recursivelyRenderComponents({ root, children: [main] })
+  const component = createComponent({ _type: 'div', children })
+  component.noProxy._parent = { _node: root }
+  recursivelyRenderComponent({ component })
 }
 
-const browserHistory = createComponent({
-  _id: 'browserHistory',
-  state: {
-    locationPath: window.location.pathname,
-    goTo (path) {
-      browserHistory.state.locationPath = path
-      window.history.pushState(null, null, path)
-    }
-  }
-})
 
-const isPathCorrect = (path, locationPath) => path === locationPath
 
-const route = (id, path, component) => createComponent({
-  _type: 'div',
-  _id: id,
-  __children () {
-    return [isPathCorrect(path, browserHistory.state.locationPath) && component]
-  }
-}, browserHistory)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// const browserHistory = createComponent({
+//   _id: 'browserHistory',
+//   state: {
+//     locationPath: window.location.pathname,
+//     goTo (path) {
+//       browserHistory.state.locationPath = path
+//       window.history.pushState(null, null, path)
+//     }
+//   }
+// })
+//
+// const isPathCorrect = (path, locationPath) => path === locationPath
+//
+// const route = (id, path, component) => createComponent({
+//   _type: 'div',
+//   _id: id,
+//   __children () {
+//     return [isPathCorrect(path, browserHistory.state.locationPath) && component]
+//   }
+// }, browserHistory)
 
 if (window.__TEST__) {
   module.exports = {
     createComponent,
     renderApp,
-    browserHistory,
-    route
+    // browserHistory,
+    // route
   }
 }
