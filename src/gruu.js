@@ -247,19 +247,7 @@ const recursivelyCreateComponent = ({ head, watchers, children, parent }) => {
   })
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+// ---------------------------------------------------------------------------------------------------------------------
 const stateModificationHandler = ({ object, actions, value }) => {
   if (actions.length === 0) {
     object.state = value
@@ -270,36 +258,46 @@ const stateModificationHandler = ({ object, actions, value }) => {
   }
 }
 
+const get = (object, actions) => actions.reduce((acc, key) => acc[key], object)
+
 const childrenModificationHandler = ({ object, actions, value }) => {
-  if (actions.length === 0) {
-    object.children.forEach((child, i) => {
-      if (child && value[i]) {
-        Object.keys(value[i]).forEach((key) => {
-          domModificator2({ object: child, actions: [key], value: value[i][key] })
-        })
-      } else if (!child || !value[i]) {
-        domModificator2({ object, actions: ['children', i], value: value[i] })
-      }
+  const lastIndexChildren = actions.lastIndexOf('children')
+  const action = actions.slice(lastIndexChildren + 1)[0]
+
+  if (action === undefined) {
+    const length = object.children.length - value.length
+    value.concat(Array(length < 0 ? 0 : length).fill(null)).forEach((newChild, i) => {
+      domModificator2({ object, actions: [...actions, `${i}`], value: newChild })
     })
-    value.slice(object.children.length).forEach((newChild, i) => {
-      domModificator2({ object, actions: ['children', object.children.length + i], value: newChild })
-    })
-  } else if (!isNaN(parseInt(actions[0], 10))) {
-    const target = object.children[actions[0]]
+  } else if (!isNaN(parseInt(action, 10))) {
+    const target = get(object, actions)
     if (target && !value) {
-      target._parent._node.removeChild(target._node)
+      target._unmount()
       object.children[actions[0]] = value
     } else if (target && value) {
-      const component = recursivelyCreateComponent2({ object: value })
-      recursivelyRenderComponent({ component })
+      if (!target._type || !value._type) {
+        const component = recursivelyCreateComponent2({ object: value })
+        target._unmount()
+        Object.keys(target).forEach((k) => {
+          if (k !== '_parent') {
+            delete target[k]
+          }
+        })
+        Object.keys(component).forEach((k) => {
+          target[k] = component[k]
+        })
+        recursivelyRenderComponent({ component: target, parent: target._parent })
+      } else {
+        const component = recursivelyCreateComponent2({ object: value })
+        recursivelyRenderComponent({ component, attach: false })
 
-      Object.keys(component).forEach((key) => {
-        domModificator2({ object: target, actions: [key], value: component[key] })
-      })
+        Object.keys(component).forEach((key) => {
+          domModificator2({ object: target, actions: [key], value: component[key] })
+        })
+      }
     } else if (!target && value) {
       const component = recursivelyCreateComponent2({ object: value })
-      recursivelyRenderComponent({ component })
-      component._parent = object
+      recursivelyRenderComponent({ component, parent: object, attach: false })
 
       let index = parseInt(actions[0], 10) + 1
       for (let i = index; i < object.children.length; i += 1) {
@@ -315,34 +313,65 @@ const childrenModificationHandler = ({ object, actions, value }) => {
   }
 }
 
-const nodeModificationHandler = ({ object, action, actions, value }) => {
-  if (actions.length === 0) {
-    object._node[action] = value
+const nodeModificationHandler = ({ object, actions, value }) => {
+  if (actions.length === 1) {
+    object._node[actions[0]] = value
+    object[actions[0]] = value
   } else {
-    const [a, ...rest] = actions
-    const v = rest.reduce((acc, key) => acc[key], object._node[action])
-    v[a] = value
+    // TODO: style
+    const headActions = actions.slice(0, -1)
+    const tail = actions.slice(-1)
+    const v = get(object._node, headActions)
+    v[tail] = value
   }
 }
 
-const domModificator2 = ({ object, actions: [action, ...actions], value }) => {
-  if (action.startsWith('_')) {
-    return
-  }
+const destinations = {
+  NONE: 'NONE',
+  DEFAULT: 'DEFAULT',
+  STATE: 'STATE',
+  CHILDREN: 'CHILDREN',
+  NODE: 'NODE'
+}
 
-  switch (action) {
-    case 'state':
+const findDestination = (actions) => {
+  let result = { destination: destinations.DEFAULT, isNode: true }
+  for (const action of actions) {
+    if (result.destination === destinations.NONE || action.startsWith('_') || action.startsWith('$')) {
+      return destinations.NONE
+    } if (result.destination === destinations.STATE || (action === 'state' && result.isNode)) {
+      return destinations.STATE
+    } else if (action === 'children' && result.isNode) {
+      result = { destination: destinations.CHILDREN, isNode: false }
+    } else if (result.destination === destinations.CHILDREN && !isNaN(parseInt(action, 10))) {
+      result = { destination: destinations.CHILDREN, isNode: true }
+    } else if (result.isNode) {
+      result = { destination: destinations.NODE, isNode: true }
+    }
+  }
+  return result.destination
+}
+
+const domModificator2 = ({ object: obj, actions, value }) => {
+  const destination = findDestination(actions)
+
+  const object = obj.noProxy || obj
+  // console.log({ destination, actions, object })
+
+  switch (destination) {
+    case destinations.STATE:
       stateModificationHandler({ object, actions, value })
       break
-    case 'children':
+    case destinations.CHILDREN:
       childrenModificationHandler({ object, actions, value })
       break
+    case destinations.NODE:
+      nodeModificationHandler({ object, actions, value })
+      break
     default:
-      nodeModificationHandler({ object, action, actions, value })
       break
   }
 }
-
 
 const handler2 = (object, ...k) => ({
   get (target, key) {
@@ -350,8 +379,12 @@ const handler2 = (object, ...k) => ({
       return target
     }
 
+    if (typeof key === 'string' && key.startsWith('_')) {
+      return target[key]
+    }
+
     const isType = target[key] && target[key]._type
-    const component = isType ? target[key] : target
+    const component = isType ? target[key] : object
 
     if (target[key] && typeof target[key] === 'object') {
       return new Proxy(target[key], handler2(component, ...(isType ? [] : [...k, key])))
@@ -402,19 +435,20 @@ const createElement2 = (component) => {
   return node
 }
 
-const recursivelyCreateComponent2 = ({ object, parent }) => {
+const recursivelyCreateComponent2 = ({ object /* , parent */ }) => {
   if (!object) {
     return object
   }
 
   if (object._isRendered) {
-    object.noProxy._parent = parent
-    return object
+    const obj = object.noProxy || object
+    // obj._parent = parent
+    return obj
   }
 
-  const component = object
+  const component = Object.assign({}, object)
   component._id = guid()
-  component._parent = parent
+  // component._parent = parent
 
   Object.keys(component).forEach((key) => {
     component[key] = typeof component[key] === 'function'
@@ -438,11 +472,22 @@ const recursivelyCreateComponent2 = ({ object, parent }) => {
   if (component.children && Array.isArray(component.children)) {
     component.children = component.children.map(child => recursivelyCreateComponent2({
       object: child,
-      parent: component._type ? component : parent
+      // parent: component._type ? component : parent
     }))
   }
 
   component._isRendered = true
+
+  component._unmount = () => {
+    if (component._node) {
+      component._parent._node.removeChild(component._node)
+    } else {
+      component.children.forEach((child) => {
+        child._unmount()
+      })
+    }
+  }
+
   return component
 }
 
@@ -451,17 +496,23 @@ const createComponent = (object, ...watchers) => {
   return new Proxy(component, handler2(component))
 }
 
-const recursivelyRenderComponent = ({ component }) => {
+const recursivelyRenderComponent = ({ component, parent, attach = true }) => {
   const pureComponent = component && (component.noProxy || component)
 
+  pureComponent._parent = parent
+
   if (pureComponent) {
-    if (pureComponent._node && pureComponent._parent) {
+    if (attach && pureComponent._node && pureComponent._parent) {
       pureComponent._parent._node.appendChild(pureComponent._node)
     }
 
     if (pureComponent.children) {
       pureComponent.children.forEach((child) => {
-        recursivelyRenderComponent({ component: child })
+        child._parent = pureComponent._type ? pureComponent : pureComponent._parent
+        recursivelyRenderComponent({
+          component: child,
+          parent: pureComponent._type ? pureComponent : pureComponent._parent
+        })
       })
     }
   }
@@ -470,26 +521,10 @@ const recursivelyRenderComponent = ({ component }) => {
 const renderApp = (root, children) => {
   const component = createComponent({ _type: 'div', children })
   component.noProxy._parent = { _node: root }
-  recursivelyRenderComponent({ component })
+  recursivelyRenderComponent({ component, parent: { _node: root } })
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// ---------------------------------------------------------------------------------------------------------------------
 // const browserHistory = createComponent({
 //   _id: 'browserHistory',
 //   state: {
@@ -511,7 +546,7 @@ const renderApp = (root, children) => {
 //   }
 // }, browserHistory)
 
-if (window.__TEST__) {
+if (window.__DEV__) {
   module.exports = {
     createComponent,
     renderApp,

@@ -1,6 +1,4 @@
-window.__TEST__ = true // eslint-disable-line
-
-const { createComponent, renderApp, browserHistory, route } = require('../src/gruu')
+const { createComponent, renderApp, browserHistory, route } = require('../src/gruu') // eslint-disable-line
 
 describe('renders correctly', () => {
   let button1

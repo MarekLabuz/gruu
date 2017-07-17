@@ -79,16 +79,56 @@ const ul = createComponent({
   state: {
     counter: 0
   },
-  $children () {
-    return [
-      { _type: 'li', children: [{ _type: 'text', textContent: this.state.counter }] }
-    ]
-  }
+  children: [
+    { _type: 'li', children: [{ _type: 'text', textContent: 9 }] },
+    { _type: 'li', children: [{ _type: 'text', textContent: 9 }] },
+    { _type: 'li', children: [{ _type: 'text', textContent: 9 }] },
+    { _type: 'li', children: [{ _type: 'text', textContent: 9 }] },
+    // {
+    //   children: [
+    //     {
+    //       children: [
+    //         { _type: 'li', children: [{ _type: 'text', textContent: 9 }] },
+    //         { _type: 'li', children: [{ _type: 'text', textContent: 9 }] },
+    //         { _type: 'li', children: [{ _type: 'text', textContent: 9 }] },
+    //         { _type: 'li', children: [{ _type: 'text', textContent: 9 }] },
+    //       ]
+    //     }
+    //   ]
+    // }
+  ]
+  // $children () {
+  //   return [
+  //     { _type: 'li', children: [{ _type: 'text', textContent: this.state.counter }] }
+  //   ]
+  // }
+})
+const div = createComponent({
+  _type: 'div',
+  children: [{
+    children: [{
+      children: [{ _type: 'text', textContent: 'test' }]
+    }]
+  }]
 })
 
+const main = createComponent({
+  children: [div]
+})
+
+const container = document.querySelector('#root')
+renderApp(container, [main])
+
+console.log(main)
+
 setTimeout(() => {
-  ul.state.counter = 10
-  // ul.children[2] = { _type: 'li', children: [{ _type: 'text', textContent: 8 }] }
+  // ul.state.counter = 10
+  // document.querySelector('#update').onclick()
+
+  // console.log(ul.children[0].children[0].children)
+  // ul.children[0].children[0].children[2] = { _type: 'li', children: [{ _type: 'text', textContent: 8 }] }
+  // ul.children[0].children[0].children[2].textContent = 8
+
   // ul.children = [
   //   { _type: 'li', children: [{ _type: 'text', textContent: 1 }] },
   //   { _type: 'li', children: [{ _type: 'text', textContent: 2 }] },
@@ -98,7 +138,22 @@ setTimeout(() => {
   //   { _type: 'li', children: [{ _type: 'text', textContent: 6 }] },
   //   { _type: 'li', children: [{ _type: 'text', textContent: 7 }] }
   // ]
-  // ul.children[1].children[0].textContent = 5
+  // main.children[0].textContent = 'changed text'
+
+  // ul.children = [
+  //   {
+  //     children: [
+  //       { _type: 'li', children: [{ _type: 'text', textContent: 1 }] },
+  //       { _type: 'li', children: [{ _type: 'text', textContent: 2 }] },
+  //       { _type: 'li', children: [{ _type: 'text', textContent: 3 }] },
+  //       { _type: 'li', children: [{ _type: 'text', textContent: 4 }] },
+  //       { _type: 'li', children: [{ _type: 'text', textContent: 5 }] },
+  //       { _type: 'li', children: [{ _type: 'text', textContent: 6 }] },
+  //       { _type: 'li', children: [{ _type: 'text', textContent: 7 }] }
+  //     ]
+  //   }
+  // ]
+  // ul.children[1] = null
 }, 100)
 
 
@@ -108,7 +163,7 @@ setTimeout(() => {
 //   console.log('done')
 // }, 1000)
 
-const container = document.querySelector('#root')
-renderApp(container, [ul])
+// const container = document.querySelector('#root')
+// renderApp(container, [main])
 
 // console.log(main)

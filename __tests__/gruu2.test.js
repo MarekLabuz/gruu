@@ -9,7 +9,7 @@ describe('simple component opperations', () => {
     main = createComponent({
       _type: 'div',
       className: 'main-class',
-      children: [{ _type: 'text', content: 'test' }]
+      children: [{ _type: 'text', textContent: 'test' }]
     })
 
     const container = document.querySelector('#root')
@@ -18,14 +18,14 @@ describe('simple component opperations', () => {
 
   const html = (className, text) => `<div id="root"><div><div class="${className}">${text}</div></div></div>`
 
-  test('renders simple component', () => {
+  test('renders correctly', () => {
     expect(document.body.innerHTML).toEqual(html('main-class', 'test'))
   })
 
   test('text changes explicilty', () => {
-    expect(main.children[0].content).toEqual('test')
-    main.children[0].content = 'changed text'
-    expect(main.children[0].content).toEqual('changed text')
+    expect(main.children[0].textContent).toEqual('test')
+    main.children[0].textContent = 'changed text'
+    expect(main.children[0].textContent).toEqual('changed text')
     expect(document.body.innerHTML).toEqual(html('main-class', 'changed text'))
   })
 
@@ -37,53 +37,6 @@ describe('simple component opperations', () => {
   })
 })
 
-describe('subscription', () => {
-  let main
-  let button
-
-  beforeEach(() => {
-    document.body.innerHTML = '<div id="root"></div>'
-
-    button = createComponent({
-      state: {
-        toggle: false
-      },
-      _type: 'button',
-      children: [{ _type: 'text', content: 'click me' }],
-      onclick () {
-        this.state.toggle = !this.state.toggle
-      }
-    })
-
-    main = createComponent({
-      _type: 'div',
-      className: 'main-class',
-      __children: () => [{ _type: 'text', content: button.state.toggle ? 'ON' : 'OFF' }]
-    }, button)
-
-    const container = document.querySelector('#root')
-    renderApp(container, [main, button])
-  })
-
-  test('components renders correctly', () => {
-    expect(document.body.innerHTML)
-      .toEqual('<div id="root"><div><div class="main-class">OFF</div><button>click me</button></div></div>')
-  })
-
-  test('text changes on click', (done) => {
-    const html = t => `<div id="root"><div><div class="main-class">${t}</div><button>click me</button></div></div>`
-    document.querySelector('button').click()
-    setTimeout(() => {
-      expect(document.body.innerHTML).toEqual(html('ON'))
-      document.querySelector('button').click()
-      setTimeout(() => {
-        expect(document.body.innerHTML).toEqual(html('OFF'))
-        done()
-      }, 50)
-    }, 50)
-  })
-})
-
 describe('table', () => {
   beforeEach(() => {
     document.body.innerHTML = '<div id="root"></div>'
@@ -91,11 +44,11 @@ describe('table', () => {
     const tr = num => createComponent({
       _type: 'tr',
       children: [
-        { _type: 'td', children: [{ _type: 'text', content: num }] },
-        { _type: 'td', children: [{ _type: 'text', content: num }] },
-        { _type: 'td', children: [{ _type: 'text', content: num }] },
-        { _type: 'td', children: [{ _type: 'text', content: num }] },
-        { _type: 'td', children: [{ _type: 'text', content: num }] }
+        { _type: 'td', children: [{ _type: 'text', textContent: num }] },
+        { _type: 'td', children: [{ _type: 'text', textContent: num }] },
+        { _type: 'td', children: [{ _type: 'text', textContent: num }] },
+        { _type: 'td', children: [{ _type: 'text', textContent: num }] },
+        { _type: 'td', children: [{ _type: 'text', textContent: num }] }
       ]
     })
 
@@ -115,7 +68,7 @@ describe('table', () => {
             v.children = v.children.map(td => Object.assign({}, td, {
               children: [{
                 _type: 'text',
-                content: td.children[0].content + 100
+                textContent: td.children[0].textContent + 100
               }]
             }))
           }
@@ -161,9 +114,9 @@ describe('adding and removing components dynamically', () => {
     ul = createComponent({
       _type: 'ul',
       children: [
-        { _type: 'li', children: [{ _type: 'text', content: 2 }] },
-        { _type: 'li', children: [{ _type: 'text', content: 3 }] },
-        { _type: 'li', children: [{ _type: 'text', content: 4 }] }
+        { _type: 'li', children: [{ _type: 'text', textContent: 2 }] },
+        { _type: 'li', children: [{ _type: 'text', textContent: 3 }] },
+        { _type: 'li', children: [{ _type: 'text', textContent: 4 }] }
       ]
     })
 
@@ -176,25 +129,25 @@ describe('adding and removing components dynamically', () => {
   })
 
   test('adds new element (pure) with push', () => {
-    ul.children.push({ _type: 'li', children: [{ _type: 'text', content: 5 }] })
+    ul.children.push({ _type: 'li', children: [{ _type: 'text', textContent: 5 }] })
     expect(document.body.innerHTML).toBe('<div id="root"><div><ul>' +
       '<li>2</li><li>3</li><li>4</li><li>5</li></ul></div></div>')
   })
 
   test('adds new element (component) with push', () => {
-    ul.children.push(createComponent({ _type: 'li', children: [{ _type: 'text', content: 5 }] }))
+    ul.children.push(createComponent({ _type: 'li', children: [{ _type: 'text', textContent: 5 }] }))
     expect(document.body.innerHTML).toBe('<div id="root"><div><ul>' +
       '<li>2</li><li>3</li><li>4</li><li>5</li></ul></div></div>')
   })
 
   test('adds new element (pure) with assign', () => {
-    ul.children = [...ul.children, { _type: 'li', children: [{ _type: 'text', content: 5 }] }]
+    ul.children = [...ul.children, { _type: 'li', children: [{ _type: 'text', textContent: 5 }] }]
     expect(document.body.innerHTML).toBe('<div id="root"><div><ul>' +
       '<li>2</li><li>3</li><li>4</li><li>5</li></ul></div></div>')
   })
 
   test('adds new element (component) with assign', () => {
-    ul.children = [...ul.children, createComponent({ _type: 'li', children: [{ _type: 'text', content: 5 }] })]
+    ul.children = [...ul.children, createComponent({ _type: 'li', children: [{ _type: 'text', textContent: 5 }] })]
     expect(document.body.innerHTML).toBe('<div id="root"><div><ul>' +
       '<li>2</li><li>3</li><li>4</li><li>5</li></ul></div></div>')
   })
@@ -202,5 +155,83 @@ describe('adding and removing components dynamically', () => {
   test('removes element with assign', () => {
     ul.children[2] = null
     expect(document.body.innerHTML).toBe('<div id="root"><div><ul><li>2</li><li>3</li></ul></div></div>')
+  })
+})
+
+describe('phantom components #1', () => {
+  let main
+
+  beforeEach(() => {
+    document.body.innerHTML = '<div id="root"></div>'
+
+    const div = createComponent({
+      _type: 'div',
+      children: [{
+        children: [{
+          children: [{ _type: 'text', textContent: 'test' }]
+        }]
+      }]
+    })
+
+    main = createComponent({
+      children: [div]
+    })
+
+    const container = document.querySelector('#root')
+    renderApp(container, [main])
+  })
+
+  test('renders correctly', () => {
+    expect(document.body.innerHTML).toBe('<div id="root"><div><div>test</div></div></div>')
+  })
+
+  test('content changes explicitly', () => {
+    main.children[0].children[0].children[0].children[0].textContent = 'test is done'
+    expect(document.body.innerHTML).toBe('<div id="root"><div><div>test is done</div></div></div>')
+  })
+})
+
+describe('phantom components #2', () => {
+  let ul
+
+  beforeEach(() => {
+    document.body.innerHTML = '<div id="root"></div>'
+
+    ul = createComponent({
+      _type: 'ul',
+      state: {
+        counter: 0
+      },
+      children: [
+        { _type: 'li', children: [{ _type: 'text', textContent: 9 }] },
+        { _type: 'li', children: [{ _type: 'text', textContent: 8 }] },
+        { _type: 'li', children: [{ _type: 'text', textContent: 7 }] },
+        { _type: 'li', children: [{ _type: 'text', textContent: 6 }] }
+      ]
+    })
+
+    const container = document.querySelector('#root')
+    renderApp(container, [ul])
+  })
+
+  test('renders correctly', () => {
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div><ul><li>9</li><li>8</li><li>7</li><li>6</li></ul></div></div>')
+  })
+
+  test('content changes explicitly', () => {
+    ul.children = [
+      {
+        children: [
+          { _type: 'li', children: [{ _type: 'text', textContent: 1 }] },
+          { _type: 'li', children: [{ _type: 'text', textContent: 2 }] },
+          { _type: 'li', children: [{ _type: 'text', textContent: 3 }] },
+          { _type: 'li', children: [{ _type: 'text', textContent: 4 }] },
+          { _type: 'li', children: [{ _type: 'text', textContent: 5 }] }
+        ]
+      }
+    ]
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div><ul><li>1</li><li>2</li><li>3</li><li>4</li><li>5</li></ul></div></div>')
   })
 })

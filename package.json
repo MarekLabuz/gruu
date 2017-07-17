@@ -8,6 +8,11 @@
     "test:watch": "jest --watchAll",
     "start": "node server.js"
   },
+  "jest": {
+    "globals": {
+      "__DEV__": true
+    }
+  },
   "author": "Marek Łabuz",
   "license": "ISC",
   "devDependencies": {

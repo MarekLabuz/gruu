@@ -1,6 +1,4 @@
-window.__TEST__ = true // eslint-disable-line
-
-const { createComponent, renderApp } = require('../src/gruu')
+const { createComponent, renderApp } = require('../src/gruu') // eslint-disable-line
 
 describe('explicit operations', () => {
   let main
