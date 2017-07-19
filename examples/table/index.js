@@ -10,7 +10,7 @@ const ul = createComponent({
   state: {
     values: []
   },
-  __children () {
+  $children () {
     return this.state.values.map((v, i) => ({
       _type: 'li',
       children: [
@@ -18,7 +18,7 @@ const ul = createComponent({
         {
           _type: 'button',
           onclick: () => ul.state.values.splice(i, 1),
-          children: [{ _type: 'text', content: 'x' }]
+          children: [{ _type: 'text', textContent: 'x' }]
         }
       ]
     }))
@@ -31,7 +31,7 @@ const add = createComponent({
     ul.state.values.push(input.value)
     input.value = ''
   },
-  children: [{ _type: 'text', content: 'ADD' }]
+  children: [{ _type: 'text', textContent: 'ADD' }]
 })
 
 const div = createComponent({
@@ -41,7 +41,7 @@ const div = createComponent({
     children: [{
       _id: 'inputText',
       _type: 'text',
-      __content: () => `Input: ${input.value || ''}`
+      $textContent: () => `Input: ${input.value || ''}`
     }]
   }]
 }, input)
@@ -51,7 +51,7 @@ const table = createComponent({
   state: {
     data: [[]]
   },
-  __children () {
+  $children () {
     // console.log(this.state.data.map((v, i) => (v || []).map(t => t)))
     return this.state.data.map((row, i) => ({
       _type: 'tr',
@@ -61,7 +61,7 @@ const table = createComponent({
       children: (row || []).map((col, j) => ({
         _type: 'td',
         children: [
-          createComponent({ _id: `${i}-${j}`, _type: 'text', __content: () => input.value || col }, input)
+          createComponent({ _id: `${i}-${j}`, _type: 'text', $textContent: () => input.value || col }, input)
         ]
       }))
     }))

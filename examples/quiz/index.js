@@ -7,12 +7,12 @@ const questionsContainer = createComponent({
     currentQuestion: 0,
     questions: []
   },
-  __style () {
+  $style () {
     return {
       left: `-${this.state.currentQuestion * 100}vw`
     }
   },
-  __children () {
+  $children () {
     return this.state.questions
   }
 })
@@ -27,7 +27,7 @@ const button = change => createComponent({
       questionsContainer.state.currentQuestion += change
     }
   },
-  children: [{ _type: 'text', content: change > 0 ? 'NEXT' : 'PREV' }]
+  children: [{ _type: 'text', textContent: change > 0 ? 'NEXT' : 'PREV' }]
 })
 
 const buttonsContainer = (index, length) => createComponent({
@@ -51,7 +51,7 @@ const createAnswer = (answer, questionId) => createComponent({
     },
     {
       _type: 'span',
-      children: [{ _type: 'text', content: answer.text }]
+      children: [{ _type: 'text', textContent: answer.text }]
     }
   ]
 })
@@ -60,7 +60,7 @@ const questionText = question => createComponent({
   _type: 'div',
   className: 'question-text',
   children: [
-    { _type: 'span', children: [{ _type: 'text', content: question.text }] },
+    { _type: 'span', children: [{ _type: 'text', textContent: question.text }] },
     {
       _type: 'div',
       style: { display: 'flex', flexDirection: 'column' },
@@ -84,12 +84,12 @@ const exitButton = createComponent({
   onclick () {
     questionsContainer.state.currentQuestion = questionsContainer.state.questions.length
   },
-  children: [{ _type: 'text', content: 'EXIT' }]
+  children: [{ _type: 'text', textContent: 'EXIT' }]
 })
 
 const navigationButton = index => createComponent({
   _type: 'button',
-  children: [{ _type: 'text', content: index + 1 }],
+  children: [{ _type: 'text', textContent: index + 1 }],
   onclick () {
     questionsContainer.state.currentQuestion = index
   }
@@ -99,7 +99,7 @@ const questionsNavigation = () => createComponent({
   _type: 'div',
   _id: 'questionsNavigation',
   className: 'questions-navigation',
-  __children () {
+  $children () {
     return questionsContainer.state.questions.map((question, i) => navigationButton(i))
   }
 }, questionsContainer)
