@@ -44,7 +44,7 @@ const div = createComponent({
       $textContent: () => `Input: ${input.value || ''}`
     }]
   }]
-}, input)
+})
 
 const table = createComponent({
   _type: 'table',
@@ -52,16 +52,15 @@ const table = createComponent({
     data: [[]]
   },
   $children () {
-    // console.log(this.state.data.map((v, i) => (v || []).map(t => t)))
     return this.state.data.map((row, i) => ({
       _type: 'tr',
       onclick () {
-        this.style = { backgroundColor: 'red' }
+        this.style = this.style && this.style.backgroundColor === 'red' ? {} : { backgroundColor: 'red' }
       },
       children: (row || []).map((col, j) => ({
         _type: 'td',
         children: [
-          createComponent({ _id: `${i}-${j}`, _type: 'text', $textContent: () => input.value || col }, input)
+          createComponent({ _id: `${i}-${j}`, _type: 'text', $textContent: () => input.value || col })
         ]
       }))
     }))
@@ -73,20 +72,20 @@ setTimeout(() => {
     table.state.data[i] = [`test ${i}`, `test ${i}`, `test ${i}`, `test ${i}`, `test ${i}`, `test ${i}`, `test ${i}`]
   }
 
-  setTimeout(() => {
-    table.state.data = []
-  }, 1500)
-
-  setTimeout(() => {
-    for (let i = 0; i < 1000; i += 10) {
-      table.state.data[i] = ['sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf']
-    }
-  }, 3000)
-
-  setTimeout(() => {
-    table.state.data[27] = ['aaaaaaa', 'aaaaaaa', 'aaaaaaa', 'aaaaaaa', 'aaaaaaa', 'aaaaaaa', 'aaaaaaa']
-  }, 4500)
-})
+  // setTimeout(() => {
+  //   table.state.data = []
+  // }, 1500)
+  //
+  // setTimeout(() => {
+  //   for (let i = 0; i < 1000; i += 10) {
+  //     table.state.data[i] = ['sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf', 'sfsdfsdf']
+  //   }
+  // }, 3000)
+  //
+  // setTimeout(() => {
+  //   table.state.data[27] = ['aaaaaaa', 'aaaaaaa', 'aaaaaaa', 'aaaaaaa', 'aaaaaaa', 'aaaaaaa', 'aaaaaaa']
+  // }, 4500)
+}, 1000)
 
 const container = document.querySelector('#root')
 renderApp(container, [input, add, div, ul, table])

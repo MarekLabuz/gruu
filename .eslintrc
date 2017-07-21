@@ -21,6 +21,7 @@
   "globals": {
     "renderApp": true,
     "createComponent": true,
-    "locationManager": true
+    "browserHistory": true,
+    "route": true
   }
 }

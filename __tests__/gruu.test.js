@@ -1,5 +1,9 @@
 const { createComponent, renderApp } = require('../src/gruu') // eslint-disable-line
 
+const timer = async (time) => {
+  await new Promise(resolve => setTimeout(resolve, time))
+}
+
 describe('simple component opperations', () => {
   let main
   let divComponent
@@ -28,8 +32,8 @@ describe('simple component opperations', () => {
   })
 
   const html = (className, text) =>
-    `<div id="root"><div><div class="${className}">${text}</div><div class="div-class" ` +
-      'style="height: 100px; width: 100px;">test #2</div></div></div>'
+    `<div id="root"><div class="${className}">${text}</div><div class="div-class" ` +
+      'style="height: 100px; width: 100px;">test #2</div></div>'
 
   test('renders correctly', () => {
     expect(document.body.innerHTML).toEqual(html('main-class', 'test'))
@@ -148,36 +152,32 @@ describe('adding and removing components dynamically', () => {
   })
 
   test('renderes correclty', () => {
-    expect(document.body.innerHTML).toBe('<div id="root"><div><ul><li>2</li><li>3</li><li>4</li></ul></div></div>')
+    expect(document.body.innerHTML).toBe('<div id="root"><ul><li>2</li><li>3</li><li>4</li></ul></div>')
   })
 
   test('adds new element (pure) with push', () => {
     ul.children.push({ _type: 'li', children: [{ _type: 'text', textContent: 5 }] })
-    expect(document.body.innerHTML).toBe('<div id="root"><div><ul>' +
-      '<li>2</li><li>3</li><li>4</li><li>5</li></ul></div></div>')
+    expect(document.body.innerHTML).toBe('<div id="root"><ul><li>2</li><li>3</li><li>4</li><li>5</li></ul></div>')
   })
 
   test('adds new element (component) with push', () => {
     ul.children.push(createComponent({ _type: 'li', children: [{ _type: 'text', textContent: 5 }] }))
-    expect(document.body.innerHTML).toBe('<div id="root"><div><ul>' +
-      '<li>2</li><li>3</li><li>4</li><li>5</li></ul></div></div>')
+    expect(document.body.innerHTML).toBe('<div id="root"><ul><li>2</li><li>3</li><li>4</li><li>5</li></ul></div>')
   })
 
   test('adds new element (pure) with assign', () => {
     ul.children = [...ul.children, { _type: 'li', children: [{ _type: 'text', textContent: 5 }] }]
-    expect(document.body.innerHTML).toBe('<div id="root"><div><ul>' +
-      '<li>2</li><li>3</li><li>4</li><li>5</li></ul></div></div>')
+    expect(document.body.innerHTML).toBe('<div id="root"><ul><li>2</li><li>3</li><li>4</li><li>5</li></ul></div>')
   })
 
   test('adds new element (component) with assign', () => {
     ul.children = [...ul.children, createComponent({ _type: 'li', children: [{ _type: 'text', textContent: 5 }] })]
-    expect(document.body.innerHTML).toBe('<div id="root"><div><ul>' +
-      '<li>2</li><li>3</li><li>4</li><li>5</li></ul></div></div>')
+    expect(document.body.innerHTML).toBe('<div id="root"><ul><li>2</li><li>3</li><li>4</li><li>5</li></ul></div>')
   })
 
   test('removes element with assign', () => {
     ul.children[2] = null
-    expect(document.body.innerHTML).toBe('<div id="root"><div><ul><li>2</li><li>3</li></ul></div></div>')
+    expect(document.body.innerHTML).toBe('<div id="root"><ul><li>2</li><li>3</li></ul></div>')
   })
 })
 
@@ -205,12 +205,12 @@ describe('phantom components', () => {
   })
 
   test('renders correctly', () => {
-    expect(document.body.innerHTML).toBe('<div id="root"><div><div>test</div></div></div>')
+    expect(document.body.innerHTML).toBe('<div id="root"><div>test</div></div>')
   })
 
   test('content changes explicitly', () => {
     main.children[0].children[0].children[0].children[0].textContent = 'test is done'
-    expect(document.body.innerHTML).toBe('<div id="root"><div><div>test is done</div></div></div>')
+    expect(document.body.innerHTML).toBe('<div id="root"><div>test is done</div></div>')
   })
 })
 
@@ -236,7 +236,7 @@ describe('dom components => phantom components', () => {
 
   test('renders correctly', () => {
     expect(document.body.innerHTML)
-      .toBe('<div id="root"><div><ul><li>9</li><li>8</li><li>7</li><li>6</li></ul></div></div>')
+      .toBe('<div id="root"><ul><li>9</li><li>8</li><li>7</li><li>6</li></ul></div>')
   })
 
   test('content changes explicitly (more elements)', () => {
@@ -252,7 +252,7 @@ describe('dom components => phantom components', () => {
       }
     ]
     expect(document.body.innerHTML)
-      .toBe('<div id="root"><div><ul><li>1</li><li>2</li><li>3</li><li>4</li><li>5</li></ul></div></div>')
+      .toBe('<div id="root"><ul><li>1</li><li>2</li><li>3</li><li>4</li><li>5</li></ul></div>')
   })
 
   test('content changes explicitly (less elements)', () => {
@@ -265,7 +265,7 @@ describe('dom components => phantom components', () => {
       }
     ]
     expect(document.body.innerHTML)
-      .toBe('<div id="root"><div><ul><li>1</li><li>2</li></ul></div></div>')
+      .toBe('<div id="root"><ul><li>1</li><li>2</li></ul></div>')
   })
 })
 
@@ -294,7 +294,7 @@ describe('phantom components => dom components', () => {
 
   test('renders correctly', () => {
     expect(document.body.innerHTML)
-      .toBe('<div id="root"><div><ul><li>9</li><li>8</li><li>7</li></ul></div></div>')
+      .toBe('<div id="root"><ul><li>9</li><li>8</li><li>7</li></ul></div>')
   })
 
   test('content changes explicilty (more elements)', () => {
@@ -305,7 +305,7 @@ describe('phantom components => dom components', () => {
       { _type: 'li', children: [{ _type: 'text', textContent: 4 }] }
     ]
     expect(document.body.innerHTML)
-      .toBe('<div id="root"><div><ul><li>1</li><li>2</li><li>3</li><li>4</li></ul></div></div>')
+      .toBe('<div id="root"><ul><li>1</li><li>2</li><li>3</li><li>4</li></ul></div>')
   })
 
   test('content changes explicilty (less elements)', () => {
@@ -314,7 +314,7 @@ describe('phantom components => dom components', () => {
       { _type: 'li', children: [{ _type: 'text', textContent: 2 }] }
     ]
     expect(document.body.innerHTML)
-      .toBe('<div id="root"><div><ul><li>1</li><li>2</li></ul></div></div>')
+      .toBe('<div id="root"><ul><li>1</li><li>2</li></ul></div>')
   })
 })
 
@@ -344,7 +344,7 @@ describe('mixed phantom and dom components', () => {
 
   test('renders correctly', () => {
     expect(document.body.innerHTML)
-      .toBe('<div id="root"><div><ul><li>1</li><li>2</li><li>3</li><li>4</li></ul></div></div>')
+      .toBe('<div id="root"><ul><li>1</li><li>2</li><li>3</li><li>4</li></ul></div>')
   })
 
   test('content changes explicitly', () => {
@@ -360,7 +360,7 @@ describe('mixed phantom and dom components', () => {
     ]
 
     expect(document.body.innerHTML)
-      .toBe('<div id="root"><div><ul><li>9</li><li>8</li><li>7</li><li>6</li></ul></div></div>')
+      .toBe('<div id="root"><ul><li>9</li><li>8</li><li>7</li><li>6</li></ul></div>')
   })
 })
 
@@ -390,7 +390,7 @@ describe('components with different _types', () => {
 
   test('renders correctly', () => {
     expect(document.body.innerHTML)
-      .toBe('<div id="root"><div><div><div>4</div><span>2</span><div>3</div><span>4</span></div></div></div>')
+      .toBe('<div id="root"><div><div>4</div><span>2</span><div>3</div><span>4</span></div></div>')
   })
 
   test('content changes explicitly', () => {
@@ -406,7 +406,7 @@ describe('components with different _types', () => {
     ]
 
     expect(document.body.innerHTML)
-      .toBe('<div id="root"><div><div><span>9</span><div>8</div><span>7</span><div>6</div></div></div></div>')
+      .toBe('<div id="root"><div><span>9</span><div>8</div><span>7</span><div>6</div></div></div>')
   })
 })
 
@@ -440,21 +440,19 @@ describe('subscription', () => {
 
   test('components renders correctly', () => {
     expect(document.body.innerHTML)
-      .toEqual('<div id="root"><div><div class="main-class">OFF</div><button>click me</button></div></div>')
+      .toEqual('<div id="root"><div class="main-class">OFF</div><button>click me</button></div>')
   })
 
-  test('text changes on click', (done) => {
-    const html = t => `<div id="root"><div><div class="main-class">${t}</div><button>click me</button></div></div>`
+  test('text changes on click', async (done) => {
+    const html = t => `<div id="root"><div class="main-class">${t}</div><button>click me</button></div>`
     document.querySelector('button').click()
-    setTimeout(() => {
-      expect(document.body.innerHTML).toEqual(html('ON'))
-      document.querySelector('button').click()
-      setTimeout(() => {
-        expect(document.body.innerHTML).toEqual(html('OFF'))
-        done()
-      }, 50)
-    }, 50)
-  }, 200)
+    await timer(25)
+    expect(document.body.innerHTML).toEqual(html('ON'))
+    document.querySelector('button').click()
+    await timer(25)
+    expect(document.body.innerHTML).toEqual(html('OFF'))
+    done()
+  }, 75)
 })
 
 describe('phantom components + subscriptions', () => {
@@ -490,14 +488,13 @@ describe('phantom components + subscriptions', () => {
   })
 
   test('renders correctly', () => {
-    expect(document.body.innerHTML).toBe('<div id="root"><div>0<button id="button">0</button></div></div>')
+    expect(document.body.innerHTML).toBe('<div id="root">0<button id="button">0</button></div>')
   })
 
-  test('content changes implicitly', (done) => {
+  test('content changes implicitly', async (done) => {
     document.querySelector('#button').click()
-    setTimeout(() => {
-      expect(document.body.innerHTML).toBe('<div id="root"><div>1<button id="button">1</button></div></div>')
-      done()
-    }, 50)
-  }, 100)
+    await timer(25)
+    expect(document.body.innerHTML).toBe('<div id="root">1<button id="button">1</button></div>')
+    done()
+  }, 50)
 })
