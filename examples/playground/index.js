@@ -1,4 +1,4 @@
-/*
+
 const page = text => createComponent({
   _type: 'div',
   textContent: text
@@ -62,7 +62,7 @@ setTimeout(() => {
     }
   ]
 }, 2000)
-*/
+
 
 // const people = createComponent({
 //   children: []
@@ -216,30 +216,30 @@ setTimeout(() => {
 // ])
 
 
-const button = createComponent({
-  _type: 'button',
-  id: 'button',
-  state: {
-    counter: 0
-  },
-  $children () {
-    return [{ _type: 'text', textContent: this.state.counter }]
-  },
-  onclick () {
-    this.state.counter += 1
-  }
-})
-
-const main = createComponent({
-  $children () {
-    return [{
-      children: [{ _type: 'text', textContent: button.state.counter }]
-    }]
-  }
-})
-
-const container = document.querySelector('#root')
-renderApp(container, [main, button])
+// const button = createComponent({
+//   _type: 'button',
+//   id: 'button',
+//   state: {
+//     counter: 0
+//   },
+//   $children () {
+//     return [{ _type: 'text', textContent: this.state.counter }]
+//   },
+//   onclick () {
+//     this.state.counter += 1
+//   }
+// })
+//
+// const main = createComponent({
+//   $children () {
+//     return [{
+//       children: [{ _type: 'text', textContent: button.state.counter }]
+//     }]
+//   }
+// })
+//
+// const container = document.querySelector('#root')
+// renderApp(container, [main, button])
 
 
 
