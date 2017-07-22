@@ -293,7 +293,9 @@ const createElement = (component) => {
 
 const processStack = []
 
-const recursivelyCreateComponent = (object) => {
+const recursivelyCreateComponent = (obj) => {
+  const object = typeof obj === 'string' ? { _type: 'text', textContent: obj } : obj
+
   if (!object) {
     return object
   }
