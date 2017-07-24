@@ -319,3 +319,52 @@ describe('routing advanced', () => {
     done()
   }, 100)
 })
+
+describe('changing button', () => {
+  beforeEach(() => {
+    const store = createComponent({
+      state: {
+        data: [['john', 'smith', 34], ['michael', 'smith', 34]],
+        columns: ['first name', 'last name', 'age', '']
+      }
+    })
+
+    const addJaneButton = createComponent({
+      children: [{
+        children: [{
+          children: [{
+            children: [{
+              _type: 'button',
+              textContent: 'Add Jane',
+              onclick () {
+                store.state.data.push(['Jane', 'Forest', Math.floor(Math.random() * 25) + 20])
+              }
+            }]
+          }]
+        }]
+      }]
+    })
+
+    const addJaneButton2 = createComponent({
+      children: [{
+        children: [{
+          children: [{
+            _type: 'button',
+            textContent: 'Add Jane 2',
+            onclick () {
+              store.state.data.push(['Jane', 'Forest', Math.floor(Math.random() * 25) + 100])
+            }
+          }]
+        }]
+      }]
+    })
+
+    const app = createComponent({
+      _type: 'div',
+      $children: () => [store.state.data.length % 2 === 0 ? addJaneButton2 : addJaneButton]
+    })
+
+    const container = document.querySelector('#root')
+    renderApp(container, [app])
+  })
+})

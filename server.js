@@ -2,7 +2,7 @@ const express = require('express')
 
 const app = express()
 
-app.get('/examples/:example/*.(js|css|json)', (req, res) => {
+app.get('/examples/:example/*.(js|css|json|png)', (req, res) => {
   res.sendFile(`${__dirname}${req.originalUrl}`)
 })
 

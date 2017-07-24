@@ -90,16 +90,14 @@ describe('table', () => {
       _type: 'button',
       id: 'update',
       onclick () {
-        table.children.forEach((v, i) => {
-          if (i % 2 === 0) {
-            v.children = v.children.map(td => Object.assign({}, td, {
-              children: [{
-                _type: 'text',
-                textContent: td.children[0].textContent + 100
-              }]
-            }))
-          }
-        })
+        table.children = table.children.map((v, i) => Object.assign({}, v, i % 2 !== 0 ? {} : {
+          children: v.children.map(td => Object.assign({}, td, {
+            children: [{
+              _type: 'text',
+              textContent: td.children[0].textContent + 100
+            }]
+          }))
+        }))
       }
     })
 

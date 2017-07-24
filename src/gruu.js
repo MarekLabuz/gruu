@@ -1,6 +1,8 @@
 const s4 = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1) // eslint-disable-line
 
-const guid = () => `${s4()}${s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`
+const uuid = () => `${s4()}${s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`
+
+const proxyAwareArrayFunctions = ['push', 'unshift']
 
 const stateModificationHandler = ({ object, actions, value }) => {
   if (actions.length === 0) {
@@ -14,126 +16,160 @@ const stateModificationHandler = ({ object, actions, value }) => {
 
 const get = (object, actions) => actions.reduce((acc, key) => acc[key], object)
 
-const findClosestParent = object => (object._node ? object : findClosestParent(object._parent))
+const findClosestNodeParent = object => (object._node ? object : findClosestNodeParent(object._parent))
 
 const childrenModificationHandler = ({ object, actions, value }) => {
   const lastIndexChildren = actions.lastIndexOf('children')
   const action = actions.slice(lastIndexChildren + 1)[0]
 
+  const target = get(object, actions)
+
   if (action === undefined) {
-    const length = object.children.length - value.length
+    const preTarget = get(object, actions.slice(0, -1))
+
+    if (!preTarget.children) {
+      preTarget.children = []
+    }
+
+    const length = preTarget.children.length - value.length
     value.concat(Array(length < 0 ? 0 : length).fill(null)).forEach((newChild, i) => {
       domModificator({ object, actions: [...actions, `${i}`], value: newChild })
     })
   } else if (!isNaN(parseInt(action, 10))) {
-    const target = get(object, actions)
-    if (target && !value) {
-      target._unmount()
-      target._isRendered = false
-      object.children[action] = null
-    } else if (target && target._isRendered && value) {
-      if (value._isRendered && value._watchers) {
-        Object.keys(value._watchers).forEach((w) => {
-          delete value._watchers[w]._listeners[value._id]
-        })
-      }
-      if ((target._type || value._type) && (!target._type || !value._type || target._type !== value._type)) {
-        const component = value._isRendered ? (value.noProxy || value) : recursivelyCreateComponent(value)
+    if (target !== value) {
+      if (target && !value) {
         target._unmount()
-        recursivelyRenderComponent({ component, parent: findClosestParent(target._parent) })
-        const nodeArray = componentToNodeArray(component)
+        target._parent.children[action] = null
+      } else if (target && value) {
+        if (value._isRendered && value._watchers) {
+          Object.keys(value._watchers).forEach((w) => {
+            delete value._watchers[w]._listeners[value._id]
+          })
+        }
+        if (!target._type || !value._type || target._type !== value._type) {
+          const component = recursivelyCreateComponent(value)
 
-        let index = parseInt(action, 10) + 1
-        for (let i = index; i < target._parent.children.length; i += 1) {
-          if (target._parent.children[i] && target._parent.children[i]._node) {
-            index = i
-            break
+          recursivelyRenderComponent({ component, parent: target._parent })
+
+          target._unmount()
+          const nodeParent = findClosestNodeParent(target._parent)
+
+          const parentNodeArray = componentToNodeArray(nodeParent, true)
+          const targetNodeArray = componentToNodeArray(target)
+          const componentNodeArray = componentToNodeArray(component)
+
+          const lastTargetNode = targetNodeArray.slice(-1)[0]
+
+          let index = parentNodeArray.findIndex(({ id }) => id === lastTargetNode.id)
+
+          if (index === -1) {
+            if (component._node) {
+              nodeParent._node.appendChild(component._node)
+            }
+            target._parent.children[action] = component
+          } else {
+            index += 1
+            for (let i = index; i < parentNodeArray.length; i += 1) {
+              if (parentNodeArray[i] && parentNodeArray[i].node &&
+                parentNodeArray[i].node.parentNode === nodeParent._node) {
+                index = i
+                break
+              }
+            }
+
+            componentNodeArray.forEach(({ node }) => {
+              if (node) {
+                nodeParent._node.insertBefore(node, parentNodeArray[index] && parentNodeArray[index].node)
+              }
+            })
+
+            target._parent.children[action] = component
           }
+        } else {
+          const component = recursivelyCreateComponent(value)
+          recursivelyRenderComponent({ component, parent: target._parent })
+
+          const componentKeys = Object.keys(component)
+          componentKeys.forEach((key) => {
+            if (!key.startsWith('_')) {
+              domModificator({ object, actions: [...actions, key], value: component[key] })
+            }
+          })
         }
+      } else if (!target && value) {
+        const component = recursivelyCreateComponent(value)
+        const preTarget = get(object, actions.slice(0, -2))
 
-        nodeArray.forEach(({ node }) => {
-          target._parent._node
-            .insertBefore(node, target._parent.children[index] && target._parent.children[index]._node)
-        })
+        const parent = findClosestNodeParent(preTarget)
+        recursivelyRenderComponent({ component, parent: preTarget })
 
-        object.children[action] = component
-      } else {
-        const component = value._isRendered ? (value.noProxy || value) : recursivelyCreateComponent(value)
-        recursivelyRenderComponent({ component, parent: findClosestParent(target._parent) })
+        const parentNodeArray = componentToNodeArray(parent, true)
+        let index = parentNodeArray.findIndex(({ id }) => id === object._id)
 
-        Object.keys(component).forEach((key) => {
-          domModificator({ object: target, actions: [key], value: component[key] })
-        })
-      }
-    } else if ((!target || !target._isRendered) && value) {
-      const component = recursivelyCreateComponent(value)
-      const parent = findClosestParent(object)
-      recursivelyRenderComponent({ component, parent })
-
-      const nodeArray = componentToNodeArray(parent, true)
-      let index = nodeArray.findIndex(({ id }) => id === (target ? target._id : object._id))
-
-      if (index === -1) {
-        if (component._node) {
-          parent._node.appendChild(component._node)
-        }
-        object.children[action] = component
-      } else {
-        index += 1
-        for (let i = index; i < nodeArray.length; i += 1) {
-          if (nodeArray[i] && nodeArray[i].node && nodeArray[i].node.parentNode === parent._node) {
-            index = i
-            break
+        if (index === -1) {
+          if (component._node) {
+            parent._node.appendChild(component._node)
           }
-        }
+          preTarget.children[action] = component
+        } else {
+          index += 1
+          for (let i = index; i < parentNodeArray.length; i += 1) {
+            if (parentNodeArray[i] && parentNodeArray[i].node && parentNodeArray[i].node.parentNode === parent._node) {
+              index = i
+              break
+            }
+          }
 
-        if (component._node) {
-          parent._node.insertBefore(component._node, nodeArray[index] && nodeArray[index].node)
+          const componentNodeArray = componentToNodeArray(component)
+
+          componentNodeArray.forEach(({ node }) => {
+            if (node) {
+              parent._node.insertBefore(node, parentNodeArray[index] && parentNodeArray[index].node)
+            }
+          })
+
+          preTarget.children[action] = component
         }
-        object.children[action] = component
       }
     }
   }
 }
 
-const anythingHasChanged = (object = {}, dest = {}) => {
-  if (typeof object === 'object' && typeof dest === 'object') {
-    const keys = Object.keys(Object.assign({}, object, dest))
-    for (const key of keys) { // eslint-disable-line
-      if (object[key] !== dest[key]) {
-        return true
-      }
-    }
-    return false
-  }
-  return object !== dest
-}
+// const anythingHasChanged = (object = {}, dest = {}) => {
+//   if (typeof object === 'object' && typeof dest === 'object') {
+//     const keys = Object.keys(Object.assign({}, object, dest))
+//     for (const key of keys) { // eslint-disable-line
+//       if (object[key] !== dest[key]) {
+//         return true
+//       }
+//     }
+//     return false
+//   }
+//   return object !== dest
+// }
 
 const nodeModificationHandler = ({ object, actions, value }) => {
-  if (actions.length === 1) {
-    const action = actions[0]
-    if (anythingHasChanged(value, object[action])) {
-      if (action === 'style') {
-        object._node.removeAttribute('style')
-        Object.keys(value).forEach((key) => {
-          object._node.style[key] = value[key] || ''
-        })
-        object.style = value
-      } else {
-        object._node[action] = value
-        object[action] = value
-      }
+  const [first, second] = actions.slice(-2)
+
+  if (first === 'style') {
+    if (actions.length === 1) {
+      const target = get(object, actions.slice(0, -1))
+      target._node.removeAttribute('style')
+      Object.keys(value).forEach((key) => {
+        target._node.style[key] = value[key] || ''
+      })
+      target.style = value
+    } else {
+      const target = get(object, actions.slice(0, -2))
+      target._node.style[second] = value
+      target.style[second] = value
     }
   } else {
+    const target = get(object, actions.slice(0, -1))
     const lastAction = actions.slice(-1)[0]
-    const { v: val, n: node } = actions
-      .slice(0, -1)
-      .reduce(({ v, n }, key) => ({ v: v[key], n: n[key] }), { v: object, n: object._node })
 
-    if (node[lastAction] !== val[lastAction] || val[lastAction] !== value || node[lastAction] !== value) {
-      val[lastAction] = value
-      node[lastAction] = value
-    }
+    target[lastAction] = value
+    target._node[lastAction] = value
   }
 }
 
@@ -146,34 +182,40 @@ const destinations = {
 }
 
 const findDestination = (actions) => {
-  let result = { destination: '', isNode: true }
+  let destination = ''
+  let isNode = true
+
   for (const action of actions) { // eslint-disable-line
-    if (result.destination === destinations.NONE || action.startsWith('_')) {
+    if (destination === destinations.NONE || action.startsWith('_')) {
       return destinations.NONE
-    } else if (result.destination === destinations.DEFAULT || action.startsWith('$')) {
+    } else if (destination === destinations.DEFAULT || action.startsWith('$')) {
       return destinations.DEFAULT
-    } else if (result.destination === destinations.STATE || (action === 'state' && result.isNode)) {
+    } else if (destination === destinations.STATE || (action === 'state' && isNode)) {
       return destinations.STATE
-    } else if (action === 'children' && result.isNode) {
-      result = { destination: destinations.CHILDREN, isNode: false }
-    } else if (result.destination === destinations.CHILDREN && !isNaN(parseInt(action, 10))) {
-      result = { destination: destinations.CHILDREN, isNode: true }
-    } else if (result.isNode) {
-      result = { destination: destinations.NODE, isNode: true }
+    } else if (action === 'children' && isNode) {
+      destination = destinations.CHILDREN
+      isNode = false
+    } else if (destination === destinations.CHILDREN && !isNaN(parseInt(action, 10))) {
+      destination = destinations.CHILDREN
+      isNode = true
+    } else if (isNode) {
+      destination = destinations.NODE
+      isNode = true
     }
   }
-  return result.destination
+  return destination
 }
 
 const defaultModificationHandler = ({ object, actions, value }) => {
-  object[actions[0]] = value
+  const target = get(object, actions.slice(0, -1))
+  const action = actions.slice(-1)[0]
+  target[action] = value
 }
 
 const domModificator = ({ object: obj, actions, value }) => {
   const destination = findDestination(actions)
 
   const object = obj.noProxy || obj
-  // debugger
 
   switch (destination) {
     case destinations.STATE:
@@ -225,11 +267,15 @@ const handler = (object, ...k) => ({
       stackElement._watchers[object._id] = object
     }
 
-    const isType = target[key] && target[key]._type
+    const isType = target[key] && (target[key]._type || target[key].children)
     const component = isType ? target[key] : object
 
     if (target[key] && typeof target[key] === 'object') {
       return new Proxy(target[key], handler(component, ...(isType ? [] : [...k, key])))
+    }
+
+    if (typeof target[key] === 'function' && !proxyAwareArrayFunctions.includes(key)) {
+      return target[key].bind(target)
     }
 
     return target[key]
@@ -247,20 +293,22 @@ const handler = (object, ...k) => ({
       if (object._listeners) {
         const listenersIds = Object.keys(object._listeners)
         listenersIds.forEach((id) => {
-          const { component, keys } = object._listeners[id]
-          const paramsTuUpdate = Object.keys(component).reduce((acc, param) => [
-            ...acc.filter(p => p !== param),
-            ...(param.startsWith('$') && keys.has(`${_actions} -> ${param.split('.')[0]}`) ? [param] : [])
-          ], [])
+          if (object._listeners[id]) {
+            const { component, keys } = object._listeners[id]
+            const paramsTuUpdate = Object.keys(component).reduce((acc, param) => [
+              ...acc.filter(p => p !== param),
+              ...(param.startsWith('$') && keys.has(`${_actions} -> ${param.split('.')[0]}`) ? [param] : [])
+            ], [])
 
-          paramsTuUpdate.forEach((param) => {
-            const pureKey = param.slice(1)
-            domModificator({
-              object: component,
-              actions: [pureKey],
-              value: component[param]()
+            paramsTuUpdate.forEach((param) => {
+              const pureKey = param.slice(1)
+              domModificator({
+                object: component,
+                actions: [pureKey],
+                value: component[param]()
+              })
             })
-          })
+          }
         })
       }
     })
@@ -304,8 +352,8 @@ const recursivelyCreateComponent = (obj) => {
     return object.noProxy || object
   }
 
-  const component = Object.assign({}, object)
-  component._id = guid()
+  const component = object
+  component._id = uuid()
 
   Object.keys(component).forEach((key) => {
     component[key] = typeof component[key] === 'function'
@@ -334,17 +382,20 @@ const recursivelyCreateComponent = (obj) => {
 
   component._isRendered = true
 
-  component._unmount = () => {
-    if (component._isRendered && component._watchers) {
-      Object.keys(component._watchers).forEach((w) => {
-        delete component._watchers[w]._listeners[component._id]
+  component._unmount = function () { // eslint-disable-line
+    if (this._isRendered && this._watchers) {
+      Object.keys(this._watchers).forEach((w) => {
+        delete this._watchers[w]._listeners[this._id]
       })
     }
-    if (component._isRendered) {
-      if (component._node && component._node.parentNode === component._parent._node) {
-        component._parent._node.removeChild(component._node)
-      } else if (component.children) {
-        component.children.forEach((child) => {
+    if (this._isRendered) {
+      if (this._node) {
+        const nodeParent = findClosestNodeParent(this._parent)
+        if (this._node.parentNode === nodeParent._node) {
+          nodeParent._node.removeChild(this._node)
+        }
+      } else if (this.children) {
+        this.children.forEach((child) => {
           if (child) {
             child._unmount()
           }
@@ -361,25 +412,22 @@ const createComponent = (object) => {
   return new Proxy(component, handler(component))
 }
 
-const recursivelyRenderComponent = ({ component, parent, attach = false }) => {
+const recursivelyRenderComponent = ({ component, parent, nodeParent }) => {
   const pureComponent = component && (component.noProxy || component)
-  let a = false
-
-  pureComponent._parent = parent
 
   if (pureComponent) {
-    if (attach && pureComponent._node && pureComponent._parent) {
-      pureComponent._parent._node.appendChild(pureComponent._node)
-    } else {
-      a = true
+    pureComponent._parent = parent
+
+    if (nodeParent && pureComponent._node) {
+      nodeParent._node.appendChild(pureComponent._node)
     }
 
     if (pureComponent.children) {
       pureComponent.children.forEach((child) => {
         recursivelyRenderComponent({
           component: child,
-          parent: pureComponent._node ? pureComponent : pureComponent._parent,
-          attach: attach || !!pureComponent._node
+          parent: pureComponent,
+          nodeParent: pureComponent._node ? pureComponent : nodeParent
         })
       })
     }
@@ -389,8 +437,9 @@ const recursivelyRenderComponent = ({ component, parent, attach = false }) => {
 const attachComponent = (component) => {
   const pureComponent = component && (component.noProxy || component)
   if (pureComponent) {
-    if (pureComponent._node && pureComponent._parent) {
-      pureComponent._parent._node.appendChild(pureComponent._node)
+    if (pureComponent._node) {
+      const nodeParent = findClosestNodeParent(pureComponent._parent)
+      nodeParent._node.appendChild(pureComponent._node)
       return
     }
 
