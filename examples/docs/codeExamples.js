@@ -1,19 +1,49 @@
+const exmpleComponents = `
+<pre>
+<k>const</k> hello = <f>createComponent</f>({
+  <c>_type</c>: 'span',
+  <c>id</c>: 'hello-world',
+  <c>textContent</c>: 'Hello World!'
+})
+
+<k>const</k> container = <f>createComponent</f>({
+  <c>_type</c>: 'div',
+  <c>className</c>: 'container',
+  <c>children</c>: [hello, {
+    <c>_type</c>: 'p',
+    <c>textContent</c>: 'Hello Again :)'
+  }]
+})
+</pre>`
+
+const exmpleComponentsHTML = `
+<div class="container">
+    <span id="hello-world">
+        Hello World!
+    </span>
+    <p>
+        Hello Again :)
+    </p>
+</div>
+`
+
 const domComponentExample = `
 <pre>
-const hello = createComponent({
-    _type: 'div',
-    textContent: 'Hello World!'
+<k>const</k> hello = <f>createComponent</f>({
+  <c>_type</c>: 'div',
+  <c>textContent</c>: 'Hello World!'
 })
 </pre>
 `
 
 const phantomComponentExample = `
 <pre>
-const phantom = createComponent({
-    children: [{
-        _type: 'div',
-        textContent: 'Inside phantom!'
-    }]
+<k>const</k> phantom = <f>createComponent</f>({
+  // no _type property
+  children: [{
+    <c>_type</c>: 'div',
+    <c>textContent</c>: 'Inside phantom!'
+  }]
 })
 </pre>
 `
@@ -53,63 +83,41 @@ const changingPropertiesExample = `
 
 const subscriptionsExample = `
 <pre>
-<k>const</k> store = <f>createComponent</f>({
-  <c>state</c>: {
-    <c>data</c>: [['john', 'smith', 34], ['michael', 'smith', 34]]
+const store = createComponent({
+  state: {
+    todo: ['lala']
   }
 })
 
-<k>const</k> addJaneButton = <f>createComponent</f>({
-  <c>$children</c>: () => [store.state.data.length < 5 && {
-    <c>_type</c>: 'button',
-    <c>textContent</c>: 'Add Jane',
-    <c>onclick</c> () {
-      store<c>.state.data.push</c>(
-        ['Jane', 'Forest', Math.floor(Math.random() * 25) + 18]
-      )
-    }
-  }]
+const input = createComponent({
+  _type: 'input',
+  oninput (e) {
+    this.value = e.currentTarget.value
+  }
 })
 
-const table = createComponent({
-  _type: 'table',
-  children: [
-    {
-      _type: 'thead',
-      children: [
-        { _type: 'th', textContent: 'first name' },
-        { _type: 'th', textContent: 'last name' },
-        { _type: 'th', textContent: 'age' },
-        { _type: 'th', textContent: '' }
-      ]
-    },
-    {
-      _type: 'tbody',
-      $children: () => store.state.data.map((row, i) => ({
-        _type: 'tr',
-        children: [
-          ...row.map(item => ({ _type: 'td', textContent: item })),
-          {
-            _type: 'td',
-            children: [store.state.data.length > 1 && {
-              _type: 'button',
-              textContent: 'X',
-              onclick () {
-                store.state.data = [
-                  ...store.state.data.slice(0, i),
-                  ...store.state.data.slice(i + 1)
-                ]
-              }
-            }]
-          }
-        ]
-      }))
-    }
-  ]
+const addButton = createComponent({
+  _type: 'button',
+  textContent: 'ADD',
+  onclick () {
+    store.state.todo.push(input.value)
+    input.value = ''
+  }
 })
 
-const app = createComponent({
+const todo = createComponent({
+  _type: 'ul',
+  $children: () => store.state.todo.map(item => ({
+    _type: 'li',
+    textContent: item
+  }))
+})
+
+const container = createComponent({
   _type: 'div',
-  children: [addJaneButton, table]
+  children: [input, addButton, todo]
 })
+
+const root = document.querySelector('#root')
+renderApp(root, [container])
 </pre>`
