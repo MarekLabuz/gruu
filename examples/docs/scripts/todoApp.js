@@ -14,6 +14,7 @@ const input = createComponent({
 const addButton = createComponent({
   _type: 'button',
   textContent: 'ADD',
+  $disabled: () => store.state.todo.length > 5,
   onclick () {
     store.state.todo.push(input.value)
     input.value = ''
@@ -41,4 +42,4 @@ const todoApp = createComponent({
 })
 
 const todoContainer = document.querySelector('.todo-app')
-renderApp(todoContainer, [{ _type: 'div' }, todoApp])
+renderApp(todoContainer, [todoApp])

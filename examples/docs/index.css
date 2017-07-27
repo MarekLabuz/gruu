@@ -27,19 +27,39 @@ section, footer {
   padding: 0 15%;
 }
 
+input:focus, select:focus, textarea:focus, button:focus {
+  outline: none;
+}
+
 .heading {
   font-size: 20px;
   padding: 10px 15%;
   background-color: #bfdbed;
   margin-top: 20px;
-  text-align: right;
   color: #434850;
+  display: flex;
+  justify-content: space-between;
+}
+
+.heading span {
+  text-align: right;
+}
+
+.github {
+  display: block;
+  width: 25px;
+  height: 25px;
+  background-image: url('images/github.png');
+  background-size: contain;
+  background-repeat: no-repeat;
 }
 
 pre {
   font-family: 'Inconsolata', monospace;
   font-size: 14px;
   margin: 0;
+  overflow: scroll;
+  font-weight: 700;
 }
 
 footer {
@@ -85,6 +105,22 @@ footer {
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative;
+  /*height: 200px;*/
+}
+
+.code-example > div:nth-child(2)::after {
+  /*content: "";*/
+  /*background-image: url('images/gruu2.png');*/
+  /*opacity: 0.1;*/
+  /*top: 0;*/
+  /*left: 0;*/
+  /*bottom: 0;*/
+  /*right: 0;*/
+  /*position: absolute;*/
+  /*z-index: -1;*/
+  /*background-size: contain;*/
+  /*background-repeat: no-repeat;*/
 }
 
 .code-example > div:nth-child(2) > pre {
@@ -94,6 +130,14 @@ footer {
 .subscriptions-example {
   display: flex;
   justify-content: space-around;
+}
+
+.code {
+  background-color: #EBEBEB;
+  padding: 10px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
 }
 
 @media (max-width: 600px) {
@@ -193,6 +237,81 @@ footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.todo-app li {
+  padding: 1px 5px;
+  border-radius: 5px;
+  cursor: pointer;
+  list-style: none;
+}
+
+li:before{
+  content: '';
+  display: inline-block;
+  height: 10px;
+  width: 20px;
+  background-image: url('images/foot.png');
+  background-size:contain;
+  background-repeat:no-repeat;
+  margin-right: 5px;
+}
+
+.todo-app li:hover {
+  background-color: #EBEBEB;
+}
+
+.todo-app input, .todo-app button {
+  height: 30px;
+  box-sizing: border-box;
+  border: 2px solid #EBEBEB;
+}
+
+.todo-app input {
+  padding: 10px;
+  margin: 0;
+  border-radius: 10px 0 0 10px;
+}
+
+.todo-app input:before {
+  content: '';
+  display: inline-block;
+  height: 10px;
+  width: 20px;
+  background-image: url('images/foot.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  margin-right: 5px;
+}
+
+.todo-app button {
+  border-radius: 0 10px 10px 0;
+  width: 50px;
+  background-color: #EBEBEB;
+  color: black;
+  cursor: pointer;
+}
+
+.todo-app button:hover:enabled {
+  background-color: #a4a4a4;
+  border-color: #a4a4a4;
+}
+
+.todo-app button:disabled {
+  opacity: 0.6;
+  color: gray;
+  cursor: not-allowed;
+}
+
+.todo-app {
+  display: flex;
+  flex-direction: column;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 10px 20px;
 }
 
 c {

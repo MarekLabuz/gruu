@@ -23,7 +23,10 @@
     </div>
   </section>
   <div class="heading">
-    JavaScript framework for creating dynamic content
+    <div>
+      <a class="github" href="https://github.com/MarekLabuz/gruu" target="_blank"></a>
+    </div>
+    <span>JavaScript framework for creating dynamic content</span>
   </div>
   <section>
     <h2>Component</h2>
@@ -213,19 +216,19 @@
             Gruu will internally connect components A and B with property relation X&nbsp=>&nbspY.
             It even works with nested properties e.g. Z.X&nbsp=>&nbspY
         </p>
-        <div class="code-example subscriptions-example">
+        <div class="code-example subscriptions-example code">
 <pre>
-const A = createComponent({
-  _type: 'div',
-  state: {
-    text: 'state of A'
+<k>const</k> A = <f>createComponent</f>({
+  <c>_type</c>: 'div',
+  <c>state</c>: {
+    <c>text</c>: 'state of A'
   }
 })
 </pre>
 <pre>
-const B = createComponent({
-  _type: 'span',
-  $textContent: () => A.state.text
+<k>const</k> B = <f>createComponent</f>({
+  <c>_type</c>: 'span',
+  <c>$textContent</c>: () => A<c>.state.text</c>
 })
 </pre>
         </div>
@@ -246,9 +249,11 @@ const B = createComponent({
             </ul>
         </div>
         <p>
-            The example below shows a TODO app. Components store and todo are connected with properties
-            relation state.todo&nbsp=>&nbspchildren. Every time the ADD button is clicked, the value of input is pushed to
-            the store.state.todo array. Then it triggers todo.children rerender.
+          The example below shows a TODO app. Components store and todo are connected with properties
+          relation state.todo&nbsp=>&nbspchildren. Every time the ADD button is clicked, the value of input is pushed to
+          the store.state.todo array. Then it triggers todo.children rerender. Clicking on an element of the list
+          reassigns the store.state.todo variable deleting the element. When number of TODO items exceeds 5,
+          ADD button becomes disabled.
         </p>
         <div class="code-example">
             <div>
@@ -269,6 +274,7 @@ const B = createComponent({
 <k>const</k> addButton = <f>createComponent</f>({
   <c>_type</c>: 'button',
   <c>textContent</c>: 'ADD',
+  <c>$disabled</c>: () => store.state.todo.length > 5,
   <c>onclick</c> () {
     store<c>.state.todo.push</c>(input.value)
     input<c>.value</c> = ''
@@ -305,10 +311,10 @@ const B = createComponent({
       In order to render app written in Gruu you have to execute a function renderApp which takes a node where components
       will be rendered and array of components to render.
     </p>
-    <pre>
-const todoContainer = document.querySelector('.todo-app')
-renderApp(todoContainer, [todoApp])
-    </pre>
+    <div class="code">
+      <pre><k>const</k> todoContainer = document<c>.querySelector</c>('#todo-app')
+<f>renderApp</f>(todoContainer, [todoApp])</pre>
+    </div>
   </section>
   <section>
     <h2>Widgets</h2>

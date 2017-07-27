@@ -9,7 +9,6 @@ const button = (text, diff) => createComponent({
   textContent: text,
   onclick () {
     counter.textContent += diff
-    // counterInnerHTML.textContent = prettyHTML(counterApp._node.outerHTML)
   }
 })
 
@@ -28,14 +27,5 @@ const counterApp = createComponent({
   ]
 })
 
-const counterInnerHTML = createComponent({
-  _type: 'pre',
-  textContent: ''
-})
-
-setTimeout(() => {
-  // counterInnerHTML.textContent = prettyHTML(counterApp._node.outerHTML)
-})
-
 const counterContainer = document.querySelector('.counter-app')
-renderApp(counterContainer, [counterApp, counterInnerHTML])
+renderApp(counterContainer, [counterApp])
