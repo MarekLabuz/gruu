@@ -23,6 +23,6 @@
     "createComponent": true,
     "browserHistory": true,
     "route": true,
-    "text": true
+    "prettyHTML": true
   }
 }

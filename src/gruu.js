@@ -36,7 +36,7 @@ const childrenModificationHandler = ({ object, actions, value }) => {
       domModificator({ object, actions: [...actions, `${i}`], value: newChild })
     })
   } else if (!isNaN(parseInt(action, 10))) {
-    if (target !== value) {
+    if (target !== (value && (value.noProxy || value))) {
       if (target && !value) {
         target._unmount()
         target._parent.children[action] = null

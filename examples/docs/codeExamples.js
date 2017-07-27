@@ -81,7 +81,7 @@ const changingPropertiesExample = `
 </pre>`
 
 
-const subscriptionsExample = `
+const todoAppCode = `
 <pre>
 const store = createComponent({
   state: {
