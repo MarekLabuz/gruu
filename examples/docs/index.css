@@ -210,7 +210,6 @@ footer {
   }
 }
 
-
 .button {
   width: 30px;
   height: 30px;
@@ -221,7 +220,7 @@ footer {
   cursor: pointer;
 }
 
-.changing-properties-app {
+.counter-app {
   font-size: 26px;
   font-weight: 400;
   display: flex;
@@ -231,8 +230,7 @@ footer {
   padding: 15px;
 }
 
-.changing-properties-app > div {
-  margin-top: 10px;
+.counter-app > div {
   width: 140px;
   display: flex;
   justify-content: space-between;

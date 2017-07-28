@@ -17,7 +17,7 @@ const buttonDec = button('-', -1)
 
 const counterApp = createComponent({
   _type: 'div',
-  className: 'changing-properties-app',
+  className: 'counter-app',
   children: [
     'Counter',
     {
