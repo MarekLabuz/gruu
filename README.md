@@ -7,6 +7,11 @@ Gruu is a small and powerful JavaScript framework for creating dynamic content. 
 ### Browser compatibility table
 
 | Chrome | Firefox | Edge | Internet Explorer | Opera | Safari |
-|-||||||
+|---|---|---|---|---|---|
 | 49.0 ✔ | 18 ✔ | 12 (10240) ✔ | No support ✗ | 36 ✔ | 10 ✔ |
 
+## Licence
+
+MIT
+
+Copyright © 2017, Marek Łabuz

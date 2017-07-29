@@ -1,20 +1,13 @@
 {
   "name": "gruu",
   "version": "1.0.0",
-  "description": "",
-  "main": "server.js",
+  "description": "JavaScript framework for creating dynamic content",
   "scripts": {
     "test": "jest",
-    "test:watch": "jest --watchAll",
-    "start": "node server.js"
-  },
-  "jest": {
-    "globals": {
-      "__DEV__": true
-    }
+    "test:watch": "jest --watchAll"
   },
   "author": "Marek Łabuz",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "babel-eslint": "^7.2.3",
     "eslint": "^3.18.0",
