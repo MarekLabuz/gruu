@@ -1,4 +1,4 @@
-const { createComponent, renderApp, browserHistory, route } = require('../src/gruu') // eslint-disable-line
+const { createComponent, renderApp, browserHistory, route } = require('../src/index') // eslint-disable-line
 
 const timer = async (time) => {
   await new Promise(resolve => setTimeout(resolve, time))

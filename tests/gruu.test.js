@@ -1,4 +1,4 @@
-const { createComponent, renderApp } = require('../src/gruu') // eslint-disable-line
+const { createComponent, renderApp } = require('../src/index') // eslint-disable-line
 
 const timer = async (time) => {
   await new Promise(resolve => setTimeout(resolve, time))
@@ -24,7 +24,7 @@ describe('simple component opperations', () => {
         height: '100px',
         width: '100px'
       },
-      textContent: 'test #2'
+      textContent: 'tests #2'
     })
 
     const container = document.querySelector('#root')
@@ -33,7 +33,7 @@ describe('simple component opperations', () => {
 
   const html = (className, text) =>
     `<div id="root"><div class="${className}">${text}</div><div class="div-class" ` +
-      'style="height: 100px; width: 100px;">test #2</div></div>'
+      'style="height: 100px; width: 100px;">tests #2</div></div>'
 
   test('renders correctly', () => {
     expect(document.body.innerHTML).toEqual(html('main-class', 'test'))
@@ -207,8 +207,8 @@ describe('phantom components', () => {
   })
 
   test('content changes explicitly', () => {
-    main.children[0].children[0].children[0].children[0].textContent = 'test is done'
-    expect(document.body.innerHTML).toBe('<div id="root"><div>test is done</div></div>')
+    main.children[0].children[0].children[0].children[0].textContent = 'tests is done'
+    expect(document.body.innerHTML).toBe('<div id="root"><div>tests is done</div></div>')
   })
 })
 

@@ -1,4 +1,4 @@
-const s4 = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1) // eslint-disable-line
+const s4 = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1)
 
 const uuid = () => `${s4()}${s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`
 
@@ -490,7 +490,7 @@ const route = (path, component) => createComponent({
   }
 })
 
-if (window.__DEV__) {
+if (module.exports) {
   module.exports = {
     createComponent,
     renderApp,
