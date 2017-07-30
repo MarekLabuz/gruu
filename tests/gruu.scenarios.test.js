@@ -1,7 +1,7 @@
 const { createComponent, renderApp, browserHistory, route } = require('../src/index') // eslint-disable-line
 
-const timer = async (time) => {
-  await new Promise(resolve => setTimeout(resolve, time))
+const timer = async () => {
+  await new Promise(resolve => setTimeout(resolve))
 }
 
 describe('store + counters + ul', () => {
@@ -57,7 +57,7 @@ describe('store + counters + ul', () => {
 
     addButton.click()
     expect(store.state.counter).toBe(1)
-    await timer(25)
+    await timer()
     const ulHtml = document.getElementsByTagName('ul')[0]
     expect(ulHtml.innerHTML).toBe('<li>1</li><li>2</li>')
     expect(ul.children[0].children[0].textContent).toBe(1)
@@ -76,7 +76,7 @@ describe('store + counters + ul', () => {
     addButton.click()
     addButton.click()
     expect(store.state.counter).toBe(4)
-    await timer(25)
+    await timer()
     const ulHtml = document.getElementsByTagName('ul')[0]
     expect(ulHtml.innerHTML).toBe('<li>1</li><li>2</li><li>3</li><li>4</li><li>5</li>')
     expect(ul.children[0].children[0].textContent).toBe(1)
@@ -90,7 +90,7 @@ describe('store + counters + ul', () => {
 
     minutButton.click()
     minutButton.click()
-    await timer(25)
+    await timer()
     expect(ulHtml.innerHTML).toBe('<li>1</li><li>2</li><li>3</li>')
     expect(ul.children[0].children[0].textContent).toBe(1)
     expect(ul.children[1].children[0].textContent).toBe(2)
@@ -165,12 +165,12 @@ describe('dynamically render component with subscription', () => {
 
     storeB.click()
     expect(numberOfStoreListeners()).toBe(1)
-    await timer(25)
+    await timer()
     expect(document.body.innerHTML).toBe(html(1, 1))
 
     mainB.click()
     expect(numberOfStoreListeners()).toBe(1)
-    await timer(25)
+    await timer()
     expect(document.body.innerHTML).toBe(html(1, 2))
 
     mainB.click()
@@ -179,14 +179,14 @@ describe('dynamically render component with subscription', () => {
     expect(numberOfStoreListeners()).toBe(1)
     mainB.click()
     expect(numberOfStoreListeners()).toBe(1)
-    await timer(25)
+    await timer()
     expect(document.body.innerHTML).toBe(html(2, 5))
 
     mainB.click()
     expect(numberOfStoreListeners()).toBe(1)
     storeB.click()
     expect(numberOfStoreListeners()).toBe(1)
-    await timer(25)
+    await timer()
     expect(document.body.innerHTML).toBe(html(3, 7))
     expect(numberOfStoreListeners()).toBe(1)
 
@@ -276,7 +276,7 @@ describe('routing advanced', () => {
     const [b1, b2, b3] = document.getElementsByTagName('button')
 
     b1.click()
-    await timer(25)
+    await timer()
 
     expect(document.body.innerHTML)
       .toBe('<div id="root"><div><span>main</span><div></div><span>page3</span></div>' +
@@ -301,7 +301,7 @@ describe('routing advanced', () => {
     ]
 
     b3.click()
-    await timer(25)
+    await timer()
 
     expect(document.body.innerHTML)
       .toBe('<div id="root"><div><span>page3</span><span>page2</span><span>page3</span><div></div></div>' +
@@ -309,7 +309,7 @@ describe('routing advanced', () => {
         '<button>/examples/playground/page2</button></div>')
 
     b2.click()
-    await timer(25)
+    await timer()
 
     expect(document.body.innerHTML)
       .toBe('<div id="root"><div><span>page3</span><span>page3</span><div><span>page1</span></div></div>' +
@@ -322,6 +322,8 @@ describe('routing advanced', () => {
 
 describe('changing button', () => {
   beforeEach(() => {
+    document.body.innerHTML = '<div id="root"></div>'
+
     const store = createComponent({
       state: {
         data: [['john', 'smith', 34], ['michael', 'smith', 34]],
@@ -367,4 +369,32 @@ describe('changing button', () => {
     const container = document.querySelector('#root')
     renderApp(container, [app])
   })
+
+  test('renders correctly', () => {
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div><button>Add Jane 2</button></div></div>')
+  })
+
+  test('button text changes on click', async (done) => {
+    const button = document.getElementsByTagName('button')[0]
+
+    button.click()
+    await timer()
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div><button>Add Jane</button></div></div>')
+
+
+    button.click()
+    await timer()
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div><button>Add Jane 2</button></div></div>')
+
+
+    button.click()
+    await timer()
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div><button>Add Jane</button></div></div>')
+
+    done()
+  }, 100)
 })

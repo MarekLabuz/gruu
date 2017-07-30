@@ -1,7 +1,7 @@
 const { createComponent, renderApp } = require('../src/index') // eslint-disable-line
 
-const timer = async (time) => {
-  await new Promise(resolve => setTimeout(resolve, time))
+const timer = async () => {
+  await new Promise(resolve => setTimeout(resolve))
 }
 
 describe('simple component opperations', () => {
@@ -444,10 +444,10 @@ describe('subscription', () => {
   test('text changes on click', async (done) => {
     const html = t => `<div id="root"><div class="main-class">${t}</div><button>click me</button></div>`
     document.querySelector('button').click()
-    await timer(25)
+    await timer()
     expect(document.body.innerHTML).toEqual(html('ON'))
     document.querySelector('button').click()
-    await timer(25)
+    await timer()
     expect(document.body.innerHTML).toEqual(html('OFF'))
     done()
   }, 75)
@@ -491,7 +491,7 @@ describe('phantom components + subscriptions', () => {
 
   test('content changes implicitly', async (done) => {
     document.querySelector('#button').click()
-    await timer(25)
+    await timer()
     expect(document.body.innerHTML).toBe('<div id="root">1<button id="button">1</button></div>')
     done()
   }, 50)
