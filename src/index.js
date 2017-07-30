@@ -32,9 +32,24 @@ const childrenModificationHandler = ({ object, actions, value }) => {
     }
 
     const length = preTarget.children.length - value.length
-    value.concat(Array(length < 0 ? 0 : length).fill(null)).forEach((newChild, i) => {
-      domModificator({ object, actions: [...actions, `${i}`], value: newChild })
-    })
+    const val = value.concat(Array(length < 0 ? 0 : length).fill(null))
+
+    let i
+    for (i = 0; i < val.length;) {
+      const currentChild = preTarget.children[i]
+      const newChild = val[i]
+
+      if (!currentChild || !newChild || !currentChild._key || !newChild._key || currentChild._key === newChild._key) {
+        domModificator({ object, actions: [...actions, `${i}`], value: newChild })
+        i += 1
+      } else {
+        currentChild._unmount()
+        preTarget.children = [
+          ...preTarget.children.slice(0, i),
+          ...preTarget.children.slice(i + 1)
+        ]
+      }
+    }
   } else if (!isNaN(parseInt(action, 10))) {
     if (target !== (value && (value.noProxy || value))) {
       if (target && !value) {
@@ -135,30 +150,20 @@ const childrenModificationHandler = ({ object, actions, value }) => {
   }
 }
 
-// const anythingHasChanged = (object = {}, dest = {}) => {
-//   if (typeof object === 'object' && typeof dest === 'object') {
-//     const keys = Object.keys(Object.assign({}, object, dest))
-//     for (const key of keys) { // eslint-disable-line
-//       if (object[key] !== dest[key]) {
-//         return true
-//       }
-//     }
-//     return false
-//   }
-//   return object !== dest
-// }
-
 const nodeModificationHandler = ({ object, actions, value }) => {
   const [first, second] = actions.slice(-2)
 
   if (first === 'style') {
     if (actions.length === 1) {
       const target = get(object, actions.slice(0, -1))
-      target._node.removeAttribute('style')
-      Object.keys(value).forEach((key) => {
-        target._node.style[key] = value[key] || ''
+      const newStyle = Object.assign({}, target.style, value)
+
+      Object.keys(newStyle).forEach((key) => {
+        if (target.style[key] !== value[key]) {
+          target._node.style[key] = newStyle[key] || ''
+          target.style[key] = newStyle[key]
+        }
       })
-      target.style = value
     } else {
       const target = get(object, actions.slice(0, -2))
       target._node.style[second] = value
@@ -168,8 +173,10 @@ const nodeModificationHandler = ({ object, actions, value }) => {
     const target = get(object, actions.slice(0, -1))
     const lastAction = actions.slice(-1)[0]
 
-    target[lastAction] = value
-    target._node[lastAction] = value
+    if (target[lastAction] !== value) {
+      target[lastAction] = value
+      target._node[lastAction] = value
+    }
   }
 }
 
