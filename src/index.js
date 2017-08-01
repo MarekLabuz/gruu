@@ -497,7 +497,7 @@ const route = (path, component) => createComponent({
   }
 })
 
-if (module.exports) {
+if (typeof module !== 'undefined') {
   module.exports = {
     createComponent,
     renderApp,
