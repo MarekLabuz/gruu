@@ -1,6 +1,6 @@
 {
   "name": "gruujs",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "JavaScript framework for creating dynamic content",
   "main": "src/index.js",
   "scripts": {
