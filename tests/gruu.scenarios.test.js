@@ -1,8 +1,6 @@
 const { createComponent, renderApp, browserHistory, route } = require('../src/index') // eslint-disable-line
 
-const timer = async () => {
-  await new Promise(resolve => setTimeout(resolve))
-}
+const timer = () => new Promise(resolve => setTimeout(resolve))
 
 describe('store + counters + ul', () => {
   let store
@@ -320,7 +318,84 @@ describe('routing advanced', () => {
   }, 100)
 })
 
-describe('changing button', () => {
+describe('changing button (dom components)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '<div id="root"></div>'
+
+    const store = createComponent({
+      state: {
+        data: [['john', 'smith', 34], ['michael', 'smith', 34]],
+        columns: ['first name', 'last name', 'age', '']
+      }
+    })
+
+    const addJaneButton = createComponent({
+      _type: 'div',
+      children: [{
+        children: [{
+          children: [{
+            children: [{
+              _type: 'button',
+              textContent: 'Add Jane',
+              onclick () {
+                store.state.data.push(['Jane', 'Forest', Math.floor(Math.random() * 25) + 20])
+              }
+            }]
+          }]
+        }]
+      }]
+    })
+
+    const addJaneButton2 = createComponent({
+      _type: 'div',
+      children: [{
+        children: [{
+          children: [{
+            _type: 'button',
+            textContent: 'Add Jane 2',
+            onclick () {
+              store.state.data.push(['Jane', 'Forest', Math.floor(Math.random() * 25) + 100])
+            }
+          }]
+        }]
+      }]
+    })
+
+    const app = createComponent({
+      _type: 'div',
+      $children: () => [store.state.data.length % 2 === 0 ? addJaneButton2 : addJaneButton]
+    })
+
+    const container = document.querySelector('#root')
+    renderApp(container, [app])
+  })
+
+  const html = text => `<div id="root"><div><div><button>${text}</button></div></div></div>`
+
+  test('renders correctly', () => {
+    expect(document.body.innerHTML).toBe(html('Add Jane 2'))
+  })
+
+  test('button text changes on click', async (done) => {
+    const button = document.getElementsByTagName('button')[0]
+
+    button.click()
+    await timer()
+    expect(document.body.innerHTML).toBe(html('Add Jane'))
+
+    button.click()
+    await timer()
+    expect(document.body.innerHTML).toBe(html('Add Jane 2'))
+
+    button.click()
+    await timer()
+    expect(document.body.innerHTML).toBe(html('Add Jane'))
+
+    done()
+  }, 100)
+})
+
+describe('changing button (phantom components)', () => {
   beforeEach(() => {
     document.body.innerHTML = '<div id="root"></div>'
 
@@ -370,9 +445,10 @@ describe('changing button', () => {
     renderApp(container, [app])
   })
 
+  const html = text => `<div id="root"><div><button>${text}</button></div></div>`
+
   test('renders correctly', () => {
-    expect(document.body.innerHTML)
-      .toBe('<div id="root"><div><button>Add Jane 2</button></div></div>')
+    expect(document.body.innerHTML).toBe(html('Add Jane 2'))
   })
 
   test('button text changes on click', async (done) => {
@@ -380,20 +456,15 @@ describe('changing button', () => {
 
     button.click()
     await timer()
-    expect(document.body.innerHTML)
-      .toBe('<div id="root"><div><button>Add Jane</button></div></div>')
-
+    expect(document.body.innerHTML).toBe(html('Add Jane'))
 
     button.click()
     await timer()
-    expect(document.body.innerHTML)
-      .toBe('<div id="root"><div><button>Add Jane 2</button></div></div>')
-
+    expect(document.body.innerHTML).toBe(html('Add Jane 2'))
 
     button.click()
     await timer()
-    expect(document.body.innerHTML)
-      .toBe('<div id="root"><div><button>Add Jane</button></div></div>')
+    expect(document.body.innerHTML).toBe(html('Add Jane'))
 
     done()
   }, 100)

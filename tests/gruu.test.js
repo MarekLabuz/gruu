@@ -1,8 +1,6 @@
 const { createComponent, renderApp } = require('../src/index') // eslint-disable-line
 
-const timer = async () => {
-  await new Promise(resolve => setTimeout(resolve))
-}
+const timer = () => new Promise(resolve => setTimeout(resolve))
 
 describe('simple component opperations', () => {
   let main
@@ -495,4 +493,194 @@ describe('phantom components + subscriptions', () => {
     expect(document.body.innerHTML).toBe('<div id="root">1<button id="button">1</button></div>')
     done()
   }, 50)
+})
+
+describe('dynamic subcription change (property change)', () => {
+  let store
+  let render
+
+  beforeEach(() => {
+    render = jest.fn()
+    document.body.innerHTML = '<div id="root"></div>'
+
+    store = createComponent({
+      state: {}
+    })
+
+    const div = createComponent({
+      _type: 'div',
+      $children () {
+        render()
+        const { selectedState: { prop1, prop2 = '', prop3 } = {} } = store.state
+        return [
+          { _type: 'div', textContent: prop1 },
+          { _type: 'div', textContent: prop2.text || prop2 },
+          { _type: 'div', textContent: prop3 }
+        ]
+      }
+    })
+
+    const container = document.querySelector('#root')
+    renderApp(container, [div])
+  })
+
+  test('renders correctly', () => {
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div><div></div><div></div><div></div></div></div>')
+    expect(render.mock.calls.length).toBe(1)
+  })
+
+  test('changes subscription dynamically', async (done) => {
+    store.state.selectedState = {
+      prop1: 'prop1 #1',
+      prop2: 'prop2 #1',
+      prop3: 'prop3 #1'
+    }
+
+    await timer()
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div><div>prop1 #1</div><div>prop2 #1</div><div>prop3 #1</div></div></div>')
+    expect(render.mock.calls.length).toBe(2)
+
+    store.state.selectedState.prop2 = 'prop2 #2'
+    await timer()
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div><div>prop1 #1</div><div>prop2 #2</div><div>prop3 #1</div></div></div>')
+    expect(render.mock.calls.length).toBe(3)
+
+    store.state.selectedState.prop2 = { text: 'prop2 #3' }
+    await timer()
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div><div>prop1 #1</div><div>prop2 #3</div><div>prop3 #1</div></div></div>')
+    expect(render.mock.calls.length).toBe(4)
+
+    store.state.selectedState.prop2.text = 'prop2 #4'
+    await timer()
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div><div>prop1 #1</div><div>prop2 #4</div><div>prop3 #1</div></div></div>')
+    expect(render.mock.calls.length).toBe(5)
+
+    store.state.selectedState = {
+      prop1: 'prop1 #2',
+      prop2: 'prop2 #5',
+      prop3: 'prop3 #2'
+    }
+    await timer()
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div><div>prop1 #2</div><div>prop2 #5</div><div>prop3 #2</div></div></div>')
+    expect(render.mock.calls.length).toBe(6)
+
+    done()
+  }, 125)
+})
+
+describe('dynamic subcription change (children change)', () => {
+  let store
+  let store2
+  let main
+  let render
+
+  beforeEach(() => {
+    render = jest.fn()
+    document.body.innerHTML = '<div id="root"></div>'
+
+    store = createComponent({
+      state: {}
+    })
+
+    store2 = createComponent({
+      state: {}
+    })
+
+    main = createComponent({
+      _type: 'div',
+      children: [{
+        _type: 'div',
+        $children () {
+          render()
+          const { selectedState: { prop1, prop2 = '', prop3 } = {} } = store.state
+          return [
+            { _type: 'div', textContent: prop1 },
+            { _type: 'div', textContent: prop2.text || prop2 },
+            { _type: 'div', textContent: prop3 }
+          ]
+        }
+      }]
+    })
+
+    const container = document.querySelector('#root')
+    renderApp(container, [main])
+  })
+
+  test('renders correctly', () => {
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div><div><div></div><div></div><div></div></div></div></div>')
+    expect(render.mock.calls.length).toBe(1)
+  })
+
+  test('changes subscription dynamically', async (done) => {
+    const render2 = jest.fn()
+    main.children[0] = {
+      _type: 'div',
+      $children () {
+        render2()
+        const { selectedState: { prop1, prop2 = '', prop3 } = {} } = store2.state
+        return [
+          { _type: 'div', textContent: prop1 },
+          { _type: 'div', textContent: prop2.text || prop2 },
+          { _type: 'div', textContent: prop3 }
+        ]
+      }
+    }
+    await timer()
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div><div><div></div><div></div><div></div></div></div></div>')
+    expect(render.mock.calls.length).toBe(1)
+    expect(render2.mock.calls.length).toBe(1)
+
+    store2.state.selectedState = {
+      prop1: 'prop1 #1',
+      prop2: 'prop2 #1',
+      prop3: 'prop3 #1'
+    }
+    await timer()
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div><div><div>prop1 #1</div><div>prop2 #1</div><div>prop3 #1</div></div></div></div>')
+    expect(render.mock.calls.length).toBe(1)
+    expect(render2.mock.calls.length).toBe(2)
+
+    store2.state.selectedState.prop2 = 'prop2 #2'
+    await timer()
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div><div><div>prop1 #1</div><div>prop2 #2</div><div>prop3 #1</div></div></div></div>')
+    expect(render.mock.calls.length).toBe(1)
+    expect(render2.mock.calls.length).toBe(3)
+
+    store2.state.selectedState.prop2 = { text: 'prop2 #3' }
+    await timer()
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div><div><div>prop1 #1</div><div>prop2 #3</div><div>prop3 #1</div></div></div></div>')
+    expect(render.mock.calls.length).toBe(1)
+    expect(render2.mock.calls.length).toBe(4)
+
+    store2.state.selectedState.prop2.text = 'prop2 #4'
+    await timer()
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div><div><div>prop1 #1</div><div>prop2 #4</div><div>prop3 #1</div></div></div></div>')
+    expect(render.mock.calls.length).toBe(1)
+    expect(render2.mock.calls.length).toBe(5)
+
+    store.state.selectedState = {
+      prop1: 'prop1 #2',
+      prop2: 'prop2 #5',
+      prop3: 'prop3 #2'
+    }
+    await timer()
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div><div><div>prop1 #1</div><div>prop2 #4</div><div>prop3 #1</div></div></div></div>')
+    expect(render.mock.calls.length).toBe(1)
+    expect(render2.mock.calls.length).toBe(5)
+
+    done()
+  }, 125)
 })
