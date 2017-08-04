@@ -1,4 +1,4 @@
-const { createComponent, renderApp, browserHistory, route } = require('../src/index') // eslint-disable-line
+const { createComponent, renderApp, browserHistory, route } = require('../src/index')
 
 const timer = () => new Promise(resolve => setTimeout(resolve))
 
@@ -318,7 +318,7 @@ describe('routing advanced', () => {
   }, 100)
 })
 
-describe('changing button (dom components)', () => {
+describe('replacing nodes (dom components)', () => {
   beforeEach(() => {
     document.body.innerHTML = '<div id="root"></div>'
 
@@ -395,7 +395,7 @@ describe('changing button (dom components)', () => {
   }, 100)
 })
 
-describe('changing button (phantom components)', () => {
+describe('replacing nodes (phantom components)', () => {
   beforeEach(() => {
     document.body.innerHTML = '<div id="root"></div>'
 

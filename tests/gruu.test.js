@@ -1,6 +1,28 @@
-const { createComponent, renderApp } = require('../src/index') // eslint-disable-line
+const { createComponent, renderApp } = require('../src/index')
 
 const timer = () => new Promise(resolve => setTimeout(resolve))
+
+describe('text as a component', () => {
+  let text
+
+  beforeEach(() => {
+    document.body.innerHTML = '<div id="root"></div>'
+
+    text = createComponent('test')
+
+    const container = document.querySelector('#root')
+    renderApp(container, [text])
+  })
+
+  test('renders correctly', () => {
+    expect(document.body.innerHTML).toBe('<div id="root">test</div>')
+  })
+
+  test('changes correctly', () => {
+    text.textContent = 'test #2'
+    expect(document.body.innerHTML).toBe('<div id="root">test #2</div>')
+  })
+})
 
 describe('simple component opperations', () => {
   let main
@@ -575,24 +597,19 @@ describe('dynamic subcription change (property change)', () => {
 })
 
 describe('dynamic subcription change (children change)', () => {
-  let store
-  let store2
-  let main
-  let render
-
-  beforeEach(() => {
-    render = jest.fn()
+  const init1 = () => {
+    const render = jest.fn()
     document.body.innerHTML = '<div id="root"></div>'
 
-    store = createComponent({
+    const store = createComponent({
       state: {}
     })
 
-    store2 = createComponent({
+    const store2 = createComponent({
       state: {}
     })
 
-    main = createComponent({
+    const main = createComponent({
       _type: 'div',
       children: [{
         _type: 'div',
@@ -610,15 +627,19 @@ describe('dynamic subcription change (children change)', () => {
 
     const container = document.querySelector('#root')
     renderApp(container, [main])
-  })
 
-  test('renders correctly', () => {
+    return { store, store2, main, render }
+  }
+
+  test('renders correctly #1', () => {
+    const { render } = init1()
     expect(document.body.innerHTML)
       .toBe('<div id="root"><div><div><div></div><div></div><div></div></div></div></div>')
     expect(render.mock.calls.length).toBe(1)
   })
 
-  test('changes subscription dynamically', async (done) => {
+  test('changes subscription dynamically with explicit children change', async (done) => {
+    const { store, store2, main, render } = init1()
     const render2 = jest.fn()
     main.children[0] = {
       _type: 'div',
@@ -683,4 +704,257 @@ describe('dynamic subcription change (children change)', () => {
 
     done()
   }, 125)
+
+  const init2 = () => {
+    const render1 = jest.fn()
+    const render2 = jest.fn()
+
+    document.body.innerHTML = '<div id="root"></div>'
+
+    const button = createComponent({
+      _type: 'button',
+      state: {
+        toggle: true
+      },
+      textContent: 'TOGGLE',
+      onclick () {
+        store1.state.counter += 1
+        store2.state.counter += 2
+        this.state.toggle = !this.state.toggle
+      }
+    })
+
+    const store1 = createComponent({
+      state: {
+        counter: 10
+      }
+    })
+
+    const store2 = createComponent({
+      state: {
+        counter: 0
+      }
+    })
+
+    const div1 = createComponent({
+      _type: 'div',
+      $textContent: () => {
+        render1()
+        return store1.state.counter
+      }
+    })
+
+    const div2 = createComponent({
+      _type: 'div',
+      $textContent: () => {
+        render2()
+        return store2.state.counter
+      }
+    })
+
+    const main = createComponent({
+      _type: 'div',
+      $children: () => [
+        button.state.toggle ? div1 : div2
+      ]
+    })
+
+    const container = document.querySelector('#root')
+    renderApp(container, [button, main])
+
+    return { store1, store2, render1, render2, buttonElem: document.getElementsByTagName('button')[0] }
+  }
+
+  test('renders correctly #2', () => {
+    const { render1, render2 } = init2()
+    expect(document.body.innerHTML).toBe('<div id="root"><button>TOGGLE</button><div><div>10</div></div></div>')
+    expect(render1.mock.calls.length).toBe(1)
+    expect(render2.mock.calls.length).toBe(0)
+  })
+
+  test('changes subscription dynamically with implicit children change', async (done) => {
+    const { store1, store2, render1, render2, buttonElem } = init2()
+    buttonElem.click()
+    await timer()
+
+    expect(document.body.innerHTML).toBe('<div id="root"><button>TOGGLE</button><div><div>2</div></div></div>')
+    expect(render1.mock.calls.length).toBe(2)
+    expect(render2.mock.calls.length).toBe(1)
+    expect(store1.state.counter).toBe(11)
+    expect(store2.state.counter).toBe(2)
+
+    buttonElem.click()
+    await timer()
+
+
+    expect(document.body.innerHTML).toBe('<div id="root"><button>TOGGLE</button><div><div>12</div></div></div>')
+    expect(render1.mock.calls.length).toBe(3)
+    expect(render2.mock.calls.length).toBe(2)
+    expect(store1.state.counter).toBe(12)
+    expect(store2.state.counter).toBe(4)
+
+    store2.state.counter += 3
+    store2.state.counter += 3
+    await timer()
+
+    expect(document.body.innerHTML).toBe('<div id="root"><button>TOGGLE</button><div><div>12</div></div></div>')
+    expect(render1.mock.calls.length).toBe(3)
+    expect(render2.mock.calls.length).toBe(2)
+    expect(store1.state.counter).toBe(12)
+    expect(store2.state.counter).toBe(10)
+
+    store1.state.counter += 5
+    store1.state.counter += 5
+    store1.state.counter += 5
+    await timer()
+
+    expect(document.body.innerHTML).toBe('<div id="root"><button>TOGGLE</button><div><div>27</div></div></div>')
+    expect(render1.mock.calls.length).toBe(4)
+    expect(render2.mock.calls.length).toBe(2)
+    expect(store1.state.counter).toBe(27)
+    expect(store2.state.counter).toBe(10)
+
+    buttonElem.click()
+    buttonElem.click()
+    buttonElem.click()
+    await timer()
+
+    expect(document.body.innerHTML).toBe('<div id="root"><button>TOGGLE</button><div><div>16</div></div></div>')
+    expect(render1.mock.calls.length).toBe(5)
+    expect(render2.mock.calls.length).toBe(3)
+    expect(store1.state.counter).toBe(30)
+    expect(store2.state.counter).toBe(16)
+
+    done()
+  }, 100)
+
+  const init3 = () => {
+    const render1 = jest.fn()
+    document.body.innerHTML = '<div id="root"></div>'
+
+    const store = createComponent({
+      state: {
+        counter: 3
+      }
+    })
+
+    const ul = createComponent({
+      _type: 'ul',
+      $children: () => {
+        render1()
+        return Array(store.state.counter).fill(0).map((v, i) => ({ _type: 'li', textContent: i }))
+      }
+    })
+
+    const main = createComponent({
+      _type: 'div',
+      children: [ul]
+    })
+
+    const container = document.querySelector('#root')
+    renderApp(container, [main])
+
+    return { render1, main, ul, store }
+  }
+
+  test('renders correctly #3', () => {
+    const { render1 } = init3()
+    expect(document.body.innerHTML).toBe('<div id="root"><div><ul><li>0</li><li>1</li><li>2</li></ul></div></div>')
+    expect(render1.mock.calls.length).toBe(1)
+  })
+
+  test('changes subscription dynamically with mixed children change', async () => {
+    const { render1, main, ul, store } = init3()
+    const render2 = jest.fn()
+
+    const store2 = createComponent({
+      state: {
+        counter: 5
+      }
+    })
+
+    main.children[0] = createComponent({
+      _type: 'ul',
+      $children: () => {
+        render2()
+        return Array(store2.state.counter).fill(0).map((v, i) => ({ _type: 'li', textContent: i * 10 }))
+      }
+    })
+
+    expect(render1.mock.calls.length).toBe(1)
+    expect(render2.mock.calls.length).toBe(1)
+    expect(document.body.innerHTML).toBe('<div id="root"><div><ul><li>0</li><li>10</li><li>20</li><li>30</li>' +
+      '<li>40</li></ul></div></div>')
+    expect(render1.mock.calls.length).toBe(1)
+    expect(render2.mock.calls.length).toBe(1)
+
+    store2.state.counter = 2
+    await timer()
+    expect(document.body.innerHTML).toBe('<div id="root"><div><ul><li>0</li><li>10</li></ul></div></div>')
+    expect(render1.mock.calls.length).toBe(1)
+    expect(render2.mock.calls.length).toBe(2)
+
+    main.children[0] = ul
+    await timer()
+
+    expect(document.body.innerHTML).toBe('<div id="root"><div><ul><li>0</li><li>1</li><li>2</li></ul></div></div>')
+    expect(render1.mock.calls.length).toBe(2)
+    expect(render2.mock.calls.length).toBe(2)
+
+    store.state.counter = 4
+    await timer()
+    store.state.counter = 0
+    store.state.counter = 2
+    await timer()
+
+    expect(document.body.innerHTML).toBe('<div id="root"><div><ul><li>0</li><li>1</li></ul></div></div>')
+    expect(render1.mock.calls.length).toBe(4)
+    expect(render2.mock.calls.length).toBe(2)
+  })
+})
+
+describe('unusual situations', () => {
+  test('rendering null component', () => {
+    document.body.innerHTML = '<div id="root"></div>'
+    let container = document.querySelector('#root')
+    renderApp(container, [null])
+
+    expect(document.body.innerHTML).toBe('<div id="root"></div>')
+
+    document.body.innerHTML = '<div id="root"></div>'
+    container = document.querySelector('#root')
+    renderApp(container, [
+      { _type: 'div', children: [null, { _type: 'span', textContent: 'hey!' }, undefined, 'ho!'] }
+    ])
+
+    expect(document.body.innerHTML).toBe('<div id="root"><div><span>hey!</span>ho!</div></div>')
+  })
+
+  test('directly rendering phantom component', () => {
+    document.body.innerHTML = '<div id="root"></div>'
+    const container = document.querySelector('#root')
+    renderApp(container, [{
+      children: [{
+        children: [{
+          children: [{
+            _type: 'div',
+            children: [
+              {
+                children: [{
+                  _type: 'span',
+                  textContent: 'test #1'
+                }]
+              },
+              {
+                _type: 'span',
+                textContent: 'test #2'
+              }
+            ]
+          }]
+        }]
+      }]
+    }])
+
+    expect(document.body.innerHTML).toBe('<div id="root"><div><span>test #1</span><span>test #2</span></div></div>')
+  })
 })
