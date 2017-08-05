@@ -1,4 +1,9 @@
-# Gruu
+<div style="display:flex;align-items:center">
+<a href="https://gruujs.com" target="_blank" style="margin-right:15px">
+<img alt="Gruu" title="Gruu" src="https://gruujs.com/images/logo.png" width="100"/>
+</a>
+<h1>Gruu</h1>
+</div>
 
 https://gruujs.com
 
