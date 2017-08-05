@@ -2,6 +2,39 @@ const { createComponent, renderApp } = require('../src/index')
 
 const timer = () => new Promise(resolve => setTimeout(resolve))
 
+describe('new component while assigning', () => {
+  let main
+
+  beforeEach(() => {
+    document.body.innerHTML = '<div id="root"></div>'
+
+    main = createComponent({
+      _type: 'div',
+      children: [{
+        _type: 'div',
+        textContent: 'red?',
+        style: {
+          backgroundColor: 'red'
+        }
+      }]
+    })
+
+    const container = document.querySelector('#root')
+    renderApp(container, [main])
+  })
+
+  test('renders correctly', () => {
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div><div style="background-color: red;">red?</div></div></div>')
+  })
+
+  test('overwrites all properties', () => {
+    main.children[0] = { _type: 'div', textContent: 'not red!' }
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div><div>not red!</div></div></div>')
+  })
+})
+
 describe('text as a component', () => {
   let text
 
@@ -51,9 +84,8 @@ describe('simple component opperations', () => {
     renderApp(container, [main, divComponent])
   })
 
-  const html = (className, text) =>
-    `<div id="root"><div class="${className}">${text}</div><div class="div-class" ` +
-      'style="height: 100px; width: 100px;">tests #2</div></div>'
+  const html = (className, text, style = ' style="height: 100px; width: 100px;"') =>
+    `<div id="root"><div class="${className}">${text}</div><div class="div-class"${style}>tests #2</div></div>`
 
   test('renders correctly', () => {
     expect(document.body.innerHTML).toEqual(html('main-class', 'test'))
@@ -81,6 +113,24 @@ describe('simple component opperations', () => {
     divComponent.style = { height: '300px', width: '150px' }
     expect(div.style.height).toBe('300px')
     expect(div.style.width).toBe('150px')
+
+    divComponent.style = {}
+    expect(document.body.innerHTML).toBe(html('main-class', 'test', ' style=""'))
+
+    divComponent.style = { backgroundColor: 'red' }
+    expect(document.body.innerHTML).toBe(html('main-class', 'test', ' style="background-color: red;"'))
+
+
+    divComponent.style = { backgroundColor: 'blue' }
+    expect(document.body.innerHTML).toBe(html('main-class', 'test', ' style="background-color: blue;"'))
+
+    divComponent.style = { backgroundColor: 'blue', position: 'absolute' }
+    expect(document.body.innerHTML)
+      .toBe(html('main-class', 'test', ' style="background-color: blue; position: absolute;"'))
+
+    divComponent.style = undefined
+    expect(document.body.innerHTML)
+      .toBe(html('main-class', 'test', ''))
   })
 })
 

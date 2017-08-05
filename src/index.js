@@ -3,6 +3,7 @@ const s4 = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substrin
 const uuid = () => `${s4()}${s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`
 
 const proxyAwareArrayFunctions = ['push', 'unshift']
+const alterKeyCondition = key => key === 'children' || key.startsWith('_') || key.startsWith('$')
 
 const stateModificationHandler = ({ object, actions, value, modifyTree }) => {
   if (modifyTree) {
@@ -141,8 +142,9 @@ const childrenModificationHandler = ({ object, actions, value, modifyTree }) => 
         } else {
           const component = value.noProxy || value
 
-          Object.keys(target).forEach((key) => {
-            component[key] = component[key] || target[key]
+          debugger
+          Object.keys(target).concat(Object.keys(component)).forEach((key) => {
+            component[key] = component[key] || (alterKeyCondition(key) ? target[key] : component[key])
           })
 
           const componentKeys = Object.keys(component)
@@ -200,26 +202,39 @@ const childrenModificationHandler = ({ object, actions, value, modifyTree }) => 
 }
 
 const nodeModificationHandler = ({ object, actions, value, modifyTree }) => {
-  const [first, second] = actions.slice(-2)
+  const lastIndexChildren = actions.lastIndexOf('style')
+  const action = actions.slice(lastIndexChildren + 1)[0]
 
-  if (first === 'style') {
-    if (actions.length === 1) {
-      const target = get(object, actions.slice(0, -1))
-      const newStyle = Object.assign({}, target.style, value)
-
-      Object.keys(newStyle).forEach((key) => {
-        if (target.style[key] !== value[key]) {
-          target._node.style[key] = newStyle[key] || ''
-          if (modifyTree) {
-            target.style[key] = newStyle[key]
-          }
+  if (lastIndexChildren !== -1) {
+    if (action === undefined) {
+      const target = get(object, actions.slice(0, lastIndexChildren))
+      if (!value) {
+        target._node.removeAttribute('style')
+        if (modifyTree) {
+          target.style = value
         }
-      })
+      } else {
+        const newStyle = Object.assign({}, target.style, value)
+        if (!target.style) {
+          target.style = {}
+        }
+        Object.keys(newStyle).forEach((key) => {
+          if (target.style[key] !== value[key]) {
+            target._node.style[key] = value[key] || ''
+            if (modifyTree) {
+              target.style[key] = value[key]
+            }
+          }
+        })
+      }
     } else {
       const target = get(object, actions.slice(0, -2))
-      target._node.style[second] = value
+      target._node.style[action] = value
       if (modifyTree) {
-        target.style[second] = value
+        if (!target.style) {
+          target.style = {}
+        }
+        target.style[action] = value
       }
     }
   } else {
@@ -406,10 +421,6 @@ const processStack = []
 
 const internallyCreateComponent = (obj) => {
   const object = typeof obj === 'string' ? { _type: 'text', textContent: obj } : obj
-
-  if (!object) {
-    return object
-  }
 
   const component = object.noProxy || object
   component._id = component._id || uuid()
