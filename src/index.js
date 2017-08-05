@@ -142,7 +142,6 @@ const childrenModificationHandler = ({ object, actions, value, modifyTree }) => 
         } else {
           const component = value.noProxy || value
 
-          debugger
           Object.keys(target).concat(Object.keys(component)).forEach((key) => {
             component[key] = component[key] || (alterKeyCondition(key) ? target[key] : component[key])
           })
