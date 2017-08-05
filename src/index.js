@@ -78,7 +78,6 @@ const childrenModificationHandler = ({ object, actions, value, modifyTree }) => 
       const currentChild = preTarget.children[i]
       const newChild = val[i]
 
-      childProcessStack.push(target)
       if (!currentChild || !newChild || !currentChild._key || !newChild._key || currentChild._key === newChild._key) {
         domModificator({ object, actions: [...actions, `${i}`], value: newChild, modifyTree })
         i += 1
@@ -89,7 +88,6 @@ const childrenModificationHandler = ({ object, actions, value, modifyTree }) => 
           ...preTarget.children.slice(i + 1)
         ]
       }
-      childProcessStack.pop()
     }
   } else if (!isNaN(parseInt(action, 10))) {
     if (target !== (value && (value.noProxy || value))) {
@@ -102,9 +100,7 @@ const childrenModificationHandler = ({ object, actions, value, modifyTree }) => 
           target._parent.children[action] = value
         }
       } else if (target && value) {
-        if (!target._strong) {
-          clearListeners(target)
-        }
+        clearListeners(target)
         if ((target._type || value._type) && (!target._type || !value._type || target._type !== value._type)) {
           const component = value.noProxy || value
 
@@ -254,7 +250,7 @@ const findDestination = (actions = []) => {
   let destination = ''
   let isNode = true
 
-  for (const action of actions) { // eslint-disable-line
+  for (const action of actions) {
     if (destination === destinations.INTERNAL || action.startsWith('_')) {
       return destinations.INTERNAL
     } else if (destination === destinations.DEFAULT || action.startsWith('$')) {
@@ -278,33 +274,10 @@ const findDestination = (actions = []) => {
 const defaultModificationHandler = ({ object, actions, value, modifyTree }) => {
   const target = get(object, actions.slice(0, -1))
   const action = actions.slice(-1)[0]
-  // clearListeners(target, [action])
   if (modifyTree) {
     target[action] = value
   }
-  // updateDynamicProperty(target, action, )
 }
-
-// const internalModificationHandler = ({ object, actions, valueParent: value, modifyTree }) => {
-//   const target = get(object, actions.slice(0, -1))
-//   const action = actions.slice(-1)[0]
-//   if (action === '_watchers') {
-//     // clearListeners(target)
-//     // if (value._isRendered && value._watchers) {
-//     //   Object.keys(value._watchers).forEach((w) => {
-//     //     const listeners = value._watchers[w]._listeners
-//     //     listeners[target._id] = {
-//     //       component: target,
-//     //       keys: listeners[value._id].keys
-//     //     }
-//     //   })
-//     //   if (modifyTree) {
-//     //     target._watchers = value._watchers
-//     //   }
-//     // }
-//     // clearListeners(value)
-//   }
-// }
 
 const domModificator = ({ object: obj, actions, value, modifyTree }) => {
   const destination = findDestination(actions)
@@ -323,9 +296,6 @@ const domModificator = ({ object: obj, actions, value, modifyTree }) => {
       break
     case destinations.DEFAULT:
       defaultModificationHandler({ object, actions, value, modifyTree })
-      break
-    case destinations.INTERNAL:
-      // internalModificationHandler({ object, actions, value, valueParent, modifyTree })
       break
     default:
       break
@@ -433,7 +403,6 @@ const createElement = (component) => {
 }
 
 const processStack = []
-const childProcessStack = []
 
 const internallyCreateComponent = (obj) => {
   const object = typeof obj === 'string' ? { _type: 'text', textContent: obj } : obj
@@ -441,24 +410,6 @@ const internallyCreateComponent = (obj) => {
   if (!object) {
     return object
   }
-
-//   if (object._isRendered) {
-//     const ooo = object.noProxy || object
-//     Object.keys(ooo).forEach((key) => {
-//       if (key.startsWith('$')) {
-//         const pureKey = key.slice(1)
-//         processStack.push({ component: ooo, key })
-//         ooo[pureKey] = ooo[key]()
-//         processStack.pop()
-//       }
-//     })
-
-//     if (ooo.children && Array.isArray(ooo.children)) {
-//       // ooo.children = ooo.children.map(internallyCreateComponent)
-//     }
-
-//     return ooo
-//   }
 
   const component = object.noProxy || object
   component._id = component._id || uuid()
@@ -482,10 +433,8 @@ const internallyCreateComponent = (obj) => {
     component.children = component.children.map(child => (child && child.noProxy) || child)
   }
 
-  component._unmount = function () { // eslint-disable-line
-    if (!component._strong) {
-      clearListeners(this)
-    }
+  component._unmount = function () {
+    clearListeners(this)
     if (this._isRendered) {
       if (this._node) {
         const nodeParent = findClosestNodeParent(this._parent)
@@ -504,23 +453,24 @@ const internallyCreateComponent = (obj) => {
 }
 
 const recursivelyCreateAndRenderComponent = ({ component: object, parent, nodeParent }) => {
-  if (!object || (object._isRendered && object._strong)) { // TODO: || object._isRendered
+  if (!object || object._isRendered) {
+    if (object && object._isRendered) {
+      Object.keys(object).forEach((key) => {
+        updateDynamicProperty(object, key)
+      })
+    }
     return
   }
-
-  // console.log('render')
 
   const component = internallyCreateComponent(object)
   internallyRenderComponent({ component, parent, nodeParent })
   if (component.children) {
     component.children.forEach((child) => {
-      childProcessStack.push(component)
       recursivelyCreateAndRenderComponent({
         component: child,
         parent: component,
         nodeParent: component._node ? component : nodeParent
       })
-      childProcessStack.pop()
     })
   }
 
@@ -529,16 +479,9 @@ const recursivelyCreateAndRenderComponent = ({ component: object, parent, nodePa
 
 const createComponent = (obj) => {
   const object = typeof obj === 'string' ? { _type: 'text', textContent: obj } : obj
-
   if (!object) {
     return object
   }
-
-  if (childProcessStack.length === 0) {
-    object._strong = true
-  }
-
-  // const component = internallyCreateComponent(object)
   object._id = object._id || uuid()
   return new Proxy(object, handler(object))
 }
@@ -597,7 +540,6 @@ const renderApp = (root, children) => {
   const component = createComponent({ children }).noProxy
   const parent = { _node: root, children: [component] }
   recursivelyCreateAndRenderComponent({ component, parent, nodeParent: parent })
-  // internallyRenderComponent({ component, parent: { _node: root, children: [component] } })
   attachComponent(component)
 }
 
