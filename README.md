@@ -1,4 +1,4 @@
-### Gruu
+## Gruu
 
 https://gruujs.com
 
