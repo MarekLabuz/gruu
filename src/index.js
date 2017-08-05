@@ -78,6 +78,7 @@ const childrenModificationHandler = ({ object, actions, value, modifyTree }) => 
       const currentChild = preTarget.children[i]
       const newChild = val[i]
 
+      childProcessStack.push(target)
       if (!currentChild || !newChild || !currentChild._key || !newChild._key || currentChild._key === newChild._key) {
         domModificator({ object, actions: [...actions, `${i}`], value: newChild, modifyTree })
         i += 1
@@ -88,6 +89,7 @@ const childrenModificationHandler = ({ object, actions, value, modifyTree }) => 
           ...preTarget.children.slice(i + 1)
         ]
       }
+      childProcessStack.pop()
     }
   } else if (!isNaN(parseInt(action, 10))) {
     if (target !== (value && (value.noProxy || value))) {
@@ -100,7 +102,9 @@ const childrenModificationHandler = ({ object, actions, value, modifyTree }) => 
           target._parent.children[action] = value
         }
       } else if (target && value) {
-        clearListeners(target)
+        if (!target._strong) {
+          clearListeners(target)
+        }
         if ((target._type || value._type) && (!target._type || !value._type || target._type !== value._type)) {
           const component = value.noProxy || value
 
@@ -140,13 +144,22 @@ const childrenModificationHandler = ({ object, actions, value, modifyTree }) => 
           }
         } else {
           const component = value.noProxy || value
-          recursivelyCreateAndRenderComponent({ component, parent: preTarget })
+
+          Object.keys(target).forEach((key) => {
+            component[key] = component[key] || target[key]
+          })
 
           const componentKeys = Object.keys(component)
-          component._node = target._node
+
           componentKeys.forEach((key) => {
-            if (!key.startsWith('_')) {
+            if (!key.startsWith('_') && !key.startsWith('$')) {
               domModificator({ object, actions: [...actions, key], value: component[key], valueParent: component })
+            }
+          })
+
+          componentKeys.forEach((key) => {
+            if (key.startsWith('$')) {
+              updateDynamicProperty(component, key)
             }
           })
 
@@ -265,9 +278,11 @@ const findDestination = (actions = []) => {
 const defaultModificationHandler = ({ object, actions, value, modifyTree }) => {
   const target = get(object, actions.slice(0, -1))
   const action = actions.slice(-1)[0]
+  // clearListeners(target, [action])
   if (modifyTree) {
     target[action] = value
   }
+  // updateDynamicProperty(target, action, )
 }
 
 // const internalModificationHandler = ({ object, actions, valueParent: value, modifyTree }) => {
@@ -418,6 +433,7 @@ const createElement = (component) => {
 }
 
 const processStack = []
+const childProcessStack = []
 
 const internallyCreateComponent = (obj) => {
   const object = typeof obj === 'string' ? { _type: 'text', textContent: obj } : obj
@@ -467,7 +483,9 @@ const internallyCreateComponent = (obj) => {
   }
 
   component._unmount = function () { // eslint-disable-line
-    clearListeners(this)
+    if (!component._strong) {
+      clearListeners(this)
+    }
     if (this._isRendered) {
       if (this._node) {
         const nodeParent = findClosestNodeParent(this._parent)
@@ -486,19 +504,23 @@ const internallyCreateComponent = (obj) => {
 }
 
 const recursivelyCreateAndRenderComponent = ({ component: object, parent, nodeParent }) => {
-  if (!object) { // TODO: || object._isRendered
+  if (!object || (object._isRendered && object._strong)) { // TODO: || object._isRendered
     return
   }
+
+  // console.log('render')
 
   const component = internallyCreateComponent(object)
   internallyRenderComponent({ component, parent, nodeParent })
   if (component.children) {
     component.children.forEach((child) => {
+      childProcessStack.push(component)
       recursivelyCreateAndRenderComponent({
         component: child,
         parent: component,
         nodeParent: component._node ? component : nodeParent
       })
+      childProcessStack.pop()
     })
   }
 
@@ -511,6 +533,11 @@ const createComponent = (obj) => {
   if (!object) {
     return object
   }
+
+  if (childProcessStack.length === 0) {
+    object._strong = true
+  }
+
   // const component = internallyCreateComponent(object)
   object._id = object._id || uuid()
   return new Proxy(object, handler(object))
