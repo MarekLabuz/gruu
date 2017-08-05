@@ -1,10 +1,4 @@
-<h1>
-<a href="https://gruujs.com" target="_blank">
-<img alt="Gruu" title="Gruu" src="https://gruujs.com/images/logo.png" width="75"/>
-</a>
-Gruu
-</h1>
-
+### Gruu
 
 https://gruujs.com
 
