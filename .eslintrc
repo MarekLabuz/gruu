@@ -22,9 +22,6 @@
     "jest": true
   },
   "globals": {
-    "renderApp": true,
-    "createComponent": true,
-    "browserHistory": true,
-    "route": true
+    "Gruu" : true
   }
 }
