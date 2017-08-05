@@ -1,8 +1,10 @@
-<h1>
+<h1 style="height:50px;line-height:50px">
 <a href="https://gruujs.com" target="_blank" style="margin-right:15px">
 <img alt="Gruu" title="Gruu" src="https://gruujs.com/images/logo.png" width="100"/>
 </a>
+<span style="margin-left:10px">
 Gruu
+</span>
 </h1>
 
 
