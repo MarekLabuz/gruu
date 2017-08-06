@@ -23,14 +23,6 @@ describe('createComponent', () => {
     expect(createComponent()).toBe(undefined)
     expect(createComponent(null)).toBe(null)
   })
-
-  test('converts text to Text HTML Element', () => {
-    const component = createComponent('test')
-    expect(typeof component).toEqual('object')
-    expect(Object.keys(component)).toEqual(['_type', 'textContent', '_id'])
-    expect(component.textContent).toEqual('test')
-    expect(Object.keys(createComponent(''))).toEqual(['_type', 'textContent', '_id'])
-  })
 })
 
 describe('', () => {

@@ -420,9 +420,7 @@ const Gruu = ((function () {
 
   const processStack = []
 
-  const internallyCreateComponent = (obj) => {
-    const object = typeof obj === 'string' ? { _type: 'text', textContent: obj } : obj
-
+  const internallyCreateComponent = (object) => {
     const component = object.noProxy || object
     component._id = component._id || uuid()
 
@@ -489,8 +487,7 @@ const Gruu = ((function () {
     component._isRendered = true
   }
 
-  const createComponent = (obj) => {
-    const object = typeof obj === 'string' ? { _type: 'text', textContent: obj } : obj
+  const createComponent = (object) => {
     if (!object) {
       return object
     }

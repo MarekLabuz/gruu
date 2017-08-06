@@ -35,28 +35,6 @@ describe('new component while assigning', () => {
   })
 })
 
-describe('text as a component', () => {
-  let text
-
-  beforeEach(() => {
-    document.body.innerHTML = '<div id="root"></div>'
-
-    text = createComponent('test')
-
-    const container = document.querySelector('#root')
-    renderApp(container, [text])
-  })
-
-  test('renders correctly', () => {
-    expect(document.body.innerHTML).toBe('<div id="root">test</div>')
-  })
-
-  test('changes correctly', () => {
-    text.textContent = 'test #2'
-    expect(document.body.innerHTML).toBe('<div id="root">test #2</div>')
-  })
-})
-
 describe('simple component opperations', () => {
   let main
   let divComponent
@@ -973,9 +951,10 @@ describe('unusual situations', () => {
 
     document.body.innerHTML = '<div id="root"></div>'
     container = document.querySelector('#root')
-    renderApp(container, [
-      { _type: 'div', children: [null, { _type: 'span', textContent: 'hey!' }, undefined, 'ho!'] }
-    ])
+    renderApp(container, [{
+      _type: 'div',
+      children: [null, { _type: 'span', textContent: 'hey!' }, undefined, { _type: 'text', textContent: 'ho!' }]
+    }])
 
     expect(document.body.innerHTML).toBe('<div id="root"><div><span>hey!</span>ho!</div></div>')
   })
