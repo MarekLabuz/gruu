@@ -1,4 +1,6 @@
 const Gruu = ((function () {
+  const exists = value => value || value === ''
+
   const s4 = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1)
 
   const uuid = () => `${s4()}${s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`
@@ -95,18 +97,18 @@ const Gruu = ((function () {
       if (target !== (value && (value.noProxy || value))) {
         const preTarget = get(object, actions.slice(0, -2))
 
-        if (target && !value) {
+        if (exists(target) && !exists(value)) {
           target._unmount()
           if (modifyTree) {
             preTarget.children[action] = value
             target._parent.children[action] = value
           }
-        } else if (target && value) {
+        } else if (exists(target) && exists(value)) {
           clearListeners(target)
           if ((target._type || value._type) && (!target._type || !value._type || target._type !== value._type)) {
-            const component = value.noProxy || value
+            let component = value.noProxy || value
 
-            recursivelyCreateAndRenderComponent({ component, parent: preTarget })
+            component = recursivelyCreateAndRenderComponent({ component, parent: preTarget })
 
             target._unmount()
             const nodeParent = findClosestNodeParent(preTarget)
@@ -166,11 +168,11 @@ const Gruu = ((function () {
               preTarget.children[action] = component
             }
           }
-        } else if (!target && value) {
-          const component = value.noProxy || value
+        } else if (!exists(target) && exists(value)) {
+          let component = value.noProxy || value
           const parent = findClosestNodeParent(preTarget)
 
-          recursivelyCreateAndRenderComponent({ component, parent: preTarget })
+          component = recursivelyCreateAndRenderComponent({ component, parent: preTarget })
 
           const parentNodeArray = componentToNodeArray(parent, true)
           let index = parentNodeArray.findIndex(({ id }) => id === object._id)
@@ -462,35 +464,42 @@ const Gruu = ((function () {
     return component
   }
 
-  const recursivelyCreateAndRenderComponent = ({ component: object, parent, nodeParent }) => {
+  const recursivelyCreateAndRenderComponent = ({ component: obj, parent, nodeParent }) => {
+    const object = (!exists(obj) || typeof obj === 'object') ? obj : { _type: 'text', textContent: obj }
+
     if (!object || object._isRendered) {
       if (object && object._isRendered) {
         Object.keys(object).forEach((key) => {
           updateDynamicProperty(object, key)
         })
       }
-      return
+      return object
     }
 
     const component = internallyCreateComponent(object)
     internallyRenderComponent({ component, parent, nodeParent })
     if (component.children) {
-      component.children.forEach((child) => {
+      component.children = component.children.map(child => (
         recursivelyCreateAndRenderComponent({
           component: child,
           parent: component,
           nodeParent: component._node ? component : nodeParent
         })
-      })
+      ))
     }
 
     component._isRendered = true
+
+    return component
   }
 
-  const createComponent = (object) => {
+  const createComponent = (obj) => {
+    const object = (!exists(obj) || typeof obj === 'object') ? obj : { _type: 'text', textContent: obj }
+
     if (!object) {
       return object
     }
+
     object._id = object._id || uuid()
     return new Proxy(object, handler(object))
   }
