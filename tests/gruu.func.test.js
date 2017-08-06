@@ -31,4 +31,12 @@ describe('createComponent', () => {
     expect(component.textContent).toEqual('test')
     expect(Object.keys(createComponent(''))).toEqual(['_type', 'textContent', '_id'])
   })
+
+  test('converts numbers to Text HTML Element', () => {
+    const component = createComponent(7868)
+    expect(typeof component).toEqual('object')
+    expect(Object.keys(component)).toEqual(['_type', 'textContent', '_id'])
+    expect(component.textContent).toEqual(7868)
+    expect(Object.keys(createComponent(0))).toEqual(['_type', 'textContent', '_id'])
+  })
 })

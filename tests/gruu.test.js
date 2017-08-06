@@ -67,6 +67,85 @@ describe('text as a component', () => {
   })
 })
 
+describe('number as a component', () => {
+  let main
+
+  beforeEach(() => {
+    document.body.innerHTML = '<div id="root"></div>'
+    main = createComponent({
+      children: [createComponent(5235)]
+    })
+
+    const container = document.querySelector('#root')
+    renderApp(container, [main])
+  })
+
+  test('renders correctly', () => {
+    expect(document.body.innerHTML).toBe('<div id="root">5235</div>')
+  })
+
+  test('changes correctly', () => {
+    main.children[0].textContent = 3412412
+    expect(document.body.innerHTML).toBe('<div id="root">3412412</div>')
+
+    main.children[0] = 6557
+    expect(document.body.innerHTML).toBe('<div id="root">6557</div>')
+
+    main.children[0] = 0
+    expect(document.body.innerHTML).toBe('<div id="root">0</div>')
+
+    main.children[0].textContent = 23123
+    expect(document.body.innerHTML).toBe('<div id="root">23123</div>')
+  })
+})
+
+describe('mixing numbers and texts as components', () => {
+  let main
+
+  beforeEach(() => {
+    document.body.innerHTML = '<div id="root"></div>'
+    main = createComponent({
+      children: [createComponent(5235), createComponent('test')]
+    })
+
+    const container = document.querySelector('#root')
+    renderApp(container, [main])
+  })
+
+  test('renders correctly', () => {
+    expect(document.body.innerHTML).toBe('<div id="root">5235test</div>')
+  })
+
+  test('changes correctly', () => {
+    main.children[0].textContent = 'test #2'
+    expect(document.body.innerHTML).toBe('<div id="root">test #2test</div>')
+
+    main.children = [0, 0]
+    expect(document.body.innerHTML).toBe('<div id="root">00</div>')
+
+    main.children = ['test #3', 234]
+    expect(document.body.innerHTML).toBe('<div id="root">test #3234</div>')
+
+    main.children = [1234, '']
+    expect(document.body.innerHTML).toBe('<div id="root">1234</div>')
+
+    main.children = ['', 0]
+    expect(document.body.innerHTML).toBe('<div id="root">0</div>')
+
+    main.children = [0, 24234]
+    expect(document.body.innerHTML).toBe('<div id="root">024234</div>')
+
+    main.children = ['13123', '', 4235]
+    expect(document.body.innerHTML).toBe('<div id="root">131234235</div>')
+
+    main.children = [23523]
+    expect(document.body.innerHTML).toBe('<div id="root">23523</div>')
+
+    main.children = ['', 999, 'test']
+    expect(document.body.innerHTML).toBe('<div id="root">999test</div>')
+  })
+})
+
 describe('simple component opperations', () => {
   let main
   let divComponent
