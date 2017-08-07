@@ -437,7 +437,8 @@ const Gruu = ((function () {
       if (key.startsWith('$')) {
         const pureKey = key.slice(1)
         processStack.push({ component, key })
-        component[pureKey] = component[key]()
+        const value = component[key]()
+        component[pureKey] = Array.isArray(value) || key !== '$children' ? value : [value]
         processStack.pop()
       }
     })

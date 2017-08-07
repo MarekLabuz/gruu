@@ -68,23 +68,25 @@ describe('text as a component', () => {
 })
 
 describe('number as a component', () => {
-  let main
-
-  beforeEach(() => {
+  const init1 = () => {
     document.body.innerHTML = '<div id="root"></div>'
-    main = createComponent({
+    const main = createComponent({
       children: [createComponent(5235)]
     })
 
     const container = document.querySelector('#root')
     renderApp(container, [main])
-  })
+
+    return { main }
+  }
 
   test('renders correctly', () => {
+    init1()
     expect(document.body.innerHTML).toBe('<div id="root">5235</div>')
   })
 
   test('changes correctly', () => {
+    const { main } = init1()
     main.children[0].textContent = 3412412
     expect(document.body.innerHTML).toBe('<div id="root">3412412</div>')
 
@@ -97,6 +99,49 @@ describe('number as a component', () => {
     main.children[0].textContent = 23123
     expect(document.body.innerHTML).toBe('<div id="root">23123</div>')
   })
+
+  const init2 = () => {
+    document.body.innerHTML = '<div id="root"></div>'
+
+    const store = createComponent({
+      state: {
+        counter: 0
+      }
+    })
+
+    const main = createComponent({
+      _type: 'div',
+      $children: () => store.state.counter
+    })
+
+    const container = document.querySelector('#root')
+    renderApp(container, [main])
+
+    return { main, store }
+  }
+
+  test('renders correctly with subscription', () => {
+    const { main } = init2()
+    expect(document.body.innerHTML).toBe('<div id="root"><div>0</div></div>')
+    expect(main.children[0].textContent).toBe(0)
+  })
+
+  test('updates correctly with subscription', async (done) => {
+    const { store, main } = init2()
+
+    store.state.counter += 2
+    await timer()
+    expect(document.body.innerHTML).toBe('<div id="root"><div>2</div></div>')
+    expect(main.children[0].textContent).toBe(2)
+
+    main.$children = () => store.state.counter * 2
+    store.state.counter += 2
+    await timer()
+    expect(document.body.innerHTML).toBe('<div id="root"><div>8</div></div>')
+    expect(main.children[0].textContent).toBe(8)
+
+    done()
+  }, 150)
 })
 
 describe('mixing numbers and texts as components', () => {
