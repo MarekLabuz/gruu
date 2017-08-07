@@ -74,8 +74,9 @@ const Gruu = ((function () {
         preTarget.children = []
       }
 
-      const length = preTarget.children.length - value.length
-      const val = value.concat(Array(length < 0 ? 0 : length))
+      const valueArray = Array.isArray(value) ? value : [value]
+      const length = preTarget.children.length - valueArray.length
+      const val = valueArray.concat(Array(length < 0 ? 0 : length))
 
       let i
       for (i = 0; i < val.length;) {
@@ -479,6 +480,9 @@ const Gruu = ((function () {
     const component = internallyCreateComponent(object)
     internallyRenderComponent({ component, parent, nodeParent })
     if (component.children) {
+      if (!Array.isArray(component.children)) {
+        component.children = [component.children]
+      }
       component.children = component.children.map(child => (
         recursivelyCreateAndRenderComponent({
           component: child,

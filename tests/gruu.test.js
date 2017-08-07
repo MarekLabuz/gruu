@@ -1052,6 +1052,93 @@ describe('dynamic subcription change (children change)', () => {
   })
 })
 
+describe('children as a array or component', () => {
+  const init1 = () => {
+    document.body.innerHTML = '<div id="root"></div>'
+
+    const main = createComponent({
+      _type: 'div',
+      children: { _type: 'div', textContent: 'hello' }
+    })
+
+    const container = document.querySelector('#root')
+    renderApp(container, [main])
+
+    return { main }
+  }
+
+  test('renders correctly #1', () => {
+    const { main } = init1()
+    expect(document.body.innerHTML).toBe('<div id="root"><div><div>hello</div></div></div>')
+    expect(Array.isArray(main.children)).toBe(true)
+    expect(typeof main.children[0]).toBe('object')
+    expect(main.children[0]._type).toBe('div')
+    expect(main.children[0].textContent).toBe('hello')
+  })
+
+  test('children changes explicitly', () => {
+    const { main } = init1()
+    main.children = { _type: 'span', textContent: 'hey!' }
+    expect(document.body.innerHTML).toBe('<div id="root"><div><span>hey!</span></div></div>')
+
+    main.children = [{ _type: 'span', textContent: 'ho!' }]
+    expect(document.body.innerHTML).toBe('<div id="root"><div><span>ho!</span></div></div>')
+
+    main.children[1] = { _type: 'div', textContent: 'test #1' }
+    expect(document.body.innerHTML).toBe('<div id="root"><div><span>ho!</span><div>test #1</div></div></div>')
+
+    main.children = { _type: 'section', children: ['test #2'] }
+    expect(document.body.innerHTML).toBe('<div id="root"><div><section>test #2</section></div></div>')
+  })
+
+  const init2 = () => {
+    document.body.innerHTML = '<div id="root"></div>'
+
+    const store = createComponent({
+      state: {
+        counter: 0
+      }
+    })
+
+    const main = createComponent({
+      _type: 'div',
+      children: { _type: 'div', $textContent: () => store.state.counter }
+    })
+
+    const container = document.querySelector('#root')
+    renderApp(container, [main])
+
+    return { main, store }
+  }
+
+  test('renders correctly #2', () => {
+    const { main } = init2()
+    expect(document.body.innerHTML).toBe('<div id="root"><div><div>0</div></div></div>')
+    expect(Array.isArray(main.children)).toBe(true)
+    expect(typeof main.children[0]).toBe('object')
+    expect(main.children[0]._type).toBe('div')
+    expect(main.children[0].textContent).toBe(0)
+  })
+
+  test('children changes implicitly', async () => {
+    const { store, main } = init2()
+
+    store.state.counter += 1
+    await timer()
+    expect(document.body.innerHTML).toBe('<div id="root"><div><div>1</div></div></div>')
+    expect(Array.isArray(main.children)).toBe(true)
+    expect(typeof main.children[0]).toBe('object')
+    expect(main.children[0]._type).toBe('div')
+    expect(main.children[0].textContent).toBe(1)
+
+
+    store.state.counter += 2
+    await timer()
+    expect(document.body.innerHTML).toBe('<div id="root"><div><div>3</div></div></div>')
+    expect(main.children[0].textContent).toBe(3)
+  })
+})
+
 describe('unusual situations', () => {
   test('rendering null component', () => {
     document.body.innerHTML = '<div id="root"></div>'

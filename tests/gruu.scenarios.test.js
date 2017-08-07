@@ -613,5 +613,5 @@ describe('excesive list generator', () => {
     expect(render3.mock.calls.length).toBe(185)
 
     done()
-  }, 150)
+  }, 300)
 })
