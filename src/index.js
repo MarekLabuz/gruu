@@ -61,7 +61,7 @@ const Gruu = ((function () {
     }
   }
 
-  const childrenModificationHandler = ({ object, actions, value, modifyTree }) => {
+  const childrenModificationHandler = ({ object, actions, value, valueParent, modifyTree }) => {
     const lastIndexChildren = actions.lastIndexOf('children')
     const action = actions.slice(lastIndexChildren + 1)[0]
 
@@ -84,7 +84,7 @@ const Gruu = ((function () {
         const newChild = val[i]
 
         if (!currentChild || !newChild || !currentChild._key || !newChild._key || currentChild._key === newChild._key) {
-          domModificator({ object, actions: [...actions, `${i}`], value: newChild, modifyTree })
+          domModificator({ object, actions: [...actions, `${i}`], value: newChild, valueParent, modifyTree })
           i += 1
         } else {
           currentChild._unmount()
@@ -167,6 +167,8 @@ const Gruu = ((function () {
             if (modifyTree) {
               target._parent.children[action] = component
               preTarget.children[action] = component
+            } else if (valueParent) {
+              valueParent.children[action] = component
             }
           }
         } else if (!exists(target) && exists(value)) {
@@ -199,6 +201,8 @@ const Gruu = ((function () {
 
           if (modifyTree) {
             preTarget.children[action] = component
+          } else if (valueParent) {
+            valueParent.children[action] = component
           }
         }
       }
@@ -298,7 +302,7 @@ const Gruu = ((function () {
     }
   }
 
-  const domModificator = ({ object: obj, actions, value, modifyTree }) => {
+  const domModificator = ({ object: obj, actions, value, valueParent, modifyTree }) => {
     const destination = findDestination(actions)
 
     const object = obj.noProxy || obj
@@ -308,7 +312,7 @@ const Gruu = ((function () {
         stateModificationHandler({ object, actions, value, modifyTree })
         break
       case destinations.CHILDREN:
-        childrenModificationHandler({ object, actions, value, modifyTree })
+        childrenModificationHandler({ object, actions, value, valueParent, modifyTree })
         break
       case destinations.NODE:
         nodeModificationHandler({ object, actions, value, modifyTree })
