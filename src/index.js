@@ -338,7 +338,7 @@ const Gruu = ((function () {
       const { component: stackElement, key: stackKey } = processStack.slice(-1)[0] || {}
       if (stackElement) {
         if (!object._listeners) {
-          object._listeners = {}
+          (object.noProxy || object)._listeners = {}
         }
 
         const newKey = [...k, key].join('.')
