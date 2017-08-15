@@ -9,6 +9,7 @@
     "start": "node server.js"
   },
   "author": "Marek Łabuz",
+  "keywords": ["javascript", "gruujs", "gruu", "ui", "library", "view"],
   "license": "MIT",
   "devDependencies": {
     "babel-eslint": "^7.2.3",
