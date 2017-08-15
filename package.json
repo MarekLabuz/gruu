@@ -1,6 +1,6 @@
 {
   "name": "gruujs",
-  "version": "1.4.5",
+  "version": "1.4.6",
   "description": "JavaScript framework for creating dynamic content",
   "main": "src/index.js",
   "scripts": {
@@ -9,7 +9,15 @@
     "start": "node server.js"
   },
   "author": "Marek Łabuz",
-  "keywords": ["javascript", "gruujs", "gruu", "ui", "library", "view", "js"],
+  "keywords": [
+    "javascript",
+    "gruujs",
+    "gruu",
+    "ui",
+    "library",
+    "view",
+    "js"
+  ],
   "license": "MIT",
   "devDependencies": {
     "babel-eslint": "^7.2.3",
