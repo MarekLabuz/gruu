@@ -142,6 +142,8 @@ const Gruu = ((function () {
             if (modifyTree) {
               preTarget.children[action] = component
               target._parent.children[action] = component
+            } else if (valueParent) {
+              valueParent.children[action] = component
             }
           } else {
             const component = value.noProxy || value
@@ -167,8 +169,6 @@ const Gruu = ((function () {
             if (modifyTree) {
               target._parent.children[action] = component
               preTarget.children[action] = component
-            } else if (valueParent) {
-              valueParent.children[action] = component
             }
           }
         } else if (!exists(target) && exists(value)) {
