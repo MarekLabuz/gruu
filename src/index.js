@@ -1,9 +1,10 @@
 const Gruu = ((function () {
   const exists = value => value || value === '' || value === 0
 
-  const s4 = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1)
+  const char = () => Math.floor(31 * Math.random()).toString(32)
+  const chunk = num => Array(num).fill(0).map(() => char()).join('')
 
-  const uuid = () => `${s4()}${s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`
+  const uuid = () => `${chunk(8)}-${chunk(4)}-${chunk(4)}-${chunk(4)}-${chunk(12)}`
 
   const proxyAwareArrayFunctions = ['push', 'unshift']
   const alterKeyCondition = key => key === 'children' || key.startsWith('_') || key.startsWith('$')
