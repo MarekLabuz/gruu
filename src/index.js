@@ -69,13 +69,17 @@ const Gruu = ((function () {
     const target = get(object, actions)
 
     if (action === undefined) {
-      const preTarget = get(object, actions.slice(0, -1))
+      let preTarget = get(object, actions.slice(0, -1))
+      preTarget = preTarget.noProxy || preTarget
 
       if (!preTarget.children) {
         preTarget.children = []
       }
 
       const valueArray = Array.isArray(value) ? value : [value]
+      if (valueParent) {
+        valueParent.children = valueArray
+      }
       const length = preTarget.children.length - valueArray.length
       const val = valueArray.concat(Array(length < 0 ? 0 : length))
 
