@@ -263,8 +263,7 @@ describe('simple component opperations', () => {
       .toBe(html('main-class', 'test', ' style="background-color: blue; position: absolute;"'))
 
     divComponent.style = undefined
-    expect(document.body.innerHTML)
-      .toBe(html('main-class', 'test', ''))
+    expect(document.body.innerHTML).toBe(html('main-class', 'test', ''))
   })
 })
 

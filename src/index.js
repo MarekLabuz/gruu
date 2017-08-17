@@ -266,7 +266,6 @@ const Gruu = ((function () {
   }
 
   const destinations = {
-    INTERNAL: 'INTERNAL',
     DEFAULT: 'DEFAULT',
     STATE: 'STATE',
     CHILDREN: 'CHILDREN',
@@ -279,9 +278,7 @@ const Gruu = ((function () {
     let isNode = true
 
     for (const action of actions) {
-      if (destination === destinations.INTERNAL || action.startsWith('_')) {
-        return destinations.INTERNAL
-      } else if (destination === destinations.DEFAULT || action.startsWith('$')) {
+      if (destination === destinations.DEFAULT || action.startsWith('$')) {
         return destinations.DEFAULT
       } else if (destination === destinations.STATE || (action === 'state' && isNode)) {
         return destinations.STATE
@@ -434,6 +431,9 @@ const Gruu = ((function () {
 
   const internallyCreateComponent = (object) => {
     const component = object.noProxy || object
+    if (component._isRendered) {
+      return component
+    }
     component._id = component._id || uuid()
 
     Object.keys(component).forEach((key) => {
@@ -478,18 +478,19 @@ const Gruu = ((function () {
   const recursivelyCreateAndRenderComponent = ({ component: obj, parent, nodeParent }) => {
     const object = (!exists(obj) || typeof obj === 'object') ? obj : { _type: 'text', textContent: obj }
 
-    if (!object || object._isRendered) {
-      if (object && object._isRendered) {
-        Object.keys(object).forEach((key) => {
-          updateDynamicProperty(object, key)
-        })
-      }
+    if (!object) {
       return object
+    }
+
+    if (object._isRendered) {
+      Object.keys(object).forEach((key) => {
+        updateDynamicProperty(object, key)
+      })
     }
 
     const component = internallyCreateComponent(object)
     internallyRenderComponent({ component, parent, nodeParent })
-    if (component.children) {
+    if (component.children && !component._isRendered) {
       if (!Array.isArray(component.children)) {
         component.children = [component.children]
       }
@@ -523,30 +524,17 @@ const Gruu = ((function () {
 
     if (pureComponent) {
       if (pureComponent._type) {
-        pureComponent._node = pureComponent._type === 'text'
-          ? document.createTextNode(pureComponent.textContent)
-          : createElement(pureComponent)
+        pureComponent._node = pureComponent._node || (
+            pureComponent._type === 'text'
+              ? document.createTextNode(pureComponent.textContent)
+              : createElement(pureComponent)
+          )
       }
 
       pureComponent._parent = parent.noProxy || parent
 
       if (nodeParent && pureComponent._node) {
         nodeParent._node.appendChild(pureComponent._node)
-      }
-    }
-  }
-
-  const attachComponent = (component) => {
-    const pureComponent = component && (component.noProxy || component)
-    if (pureComponent) {
-      if (pureComponent._node) {
-        const nodeParent = findClosestNodeParent(pureComponent._parent)
-        nodeParent._node.appendChild(pureComponent._node)
-        return
-      }
-
-      if (pureComponent.children) {
-        pureComponent.children.forEach(attachComponent)
       }
     }
   }
@@ -572,7 +560,6 @@ const Gruu = ((function () {
     const component = createComponent({ children }).noProxy
     const parent = { _node: root, children: [component] }
     recursivelyCreateAndRenderComponent({ component, parent, nodeParent: parent })
-    attachComponent(component)
   }
 
   const browserHistory = createComponent({

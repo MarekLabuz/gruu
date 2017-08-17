@@ -615,3 +615,85 @@ describe('excesive list generator', () => {
     done()
   }, 300)
 })
+
+describe('rendered components inside Gruu.createComponent as a dynamic children', () => {
+  const init = () => {
+    const render = jest.fn()
+
+    document.body.innerHTML = '<div id="root"></div>'
+
+    const store = createComponent({
+      state: {
+        toggle: true
+      }
+    })
+
+    const loader = createComponent({
+      _type: 'div',
+      children: createComponent({
+        _type: 'div',
+        $textContent: () => {
+          render()
+          return 'loader'
+        }
+      })
+    })
+
+    const div = createComponent({
+      _type: 'div',
+      $children: () => store.state.toggle && (
+        createComponent({
+          _type: 'div',
+          children: [
+            loader
+          ]
+        })
+      )
+    })
+
+    const container = document.querySelector('#root')
+    renderApp(container, [div])
+
+    return { render, store }
+  }
+
+  test('renders correctly', () => {
+    init()
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div><div><div><div>loader</div></div></div></div></div>')
+  })
+
+  test('toggle does not rerender loader', async (done) => {
+    const { render, store } = init()
+    expect(document.body.innerHTML).toBe('<div id="root"><div><div><div><div>loader</div></div></div></div></div>')
+    expect(render.mock.calls.length).toBe(1)
+
+    store.state.toggle = !store.state.toggle
+    await timer()
+
+    expect(document.body.innerHTML).toBe('<div id="root"><div></div></div>')
+    expect(render.mock.calls.length).toBe(1)
+
+    store.state.toggle = !store.state.toggle
+    await timer()
+
+    expect(document.body.innerHTML).toBe('<div id="root"><div><div><div><div>loader</div></div></div></div></div>')
+    expect(render.mock.calls.length).toBe(1)
+
+    store.state.toggle = !store.state.toggle
+    await timer()
+
+    expect(document.body.innerHTML).toBe('<div id="root"><div></div></div>')
+    expect(render.mock.calls.length).toBe(1)
+
+    store.state.toggle = !store.state.toggle
+    store.state.toggle = !store.state.toggle
+    store.state.toggle = !store.state.toggle
+    await timer()
+
+    expect(document.body.innerHTML).toBe('<div id="root"><div><div><div><div>loader</div></div></div></div></div>')
+    expect(render.mock.calls.length).toBe(1)
+
+    done()
+  }, 150)
+})
