@@ -381,7 +381,7 @@ const Gruu = ((function () {
       }
 
       object._rerender = setTimeout(() => {
-        const _actions = actions.length > 1 ? actions.slice(0, -1).join('.') : actions[0]
+        const _actions = actions.join('.')
         if (object._listeners) {
           const listenersIds = Object.keys(object._listeners)
           listenersIds.forEach((id) => {
