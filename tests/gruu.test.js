@@ -1229,3 +1229,74 @@ describe('unusual situations', () => {
     expect(document.body.innerHTML).toBe('<div id="root"><div><span>test #1</span><span>test #2</span></div></div>')
   })
 })
+
+describe('component with many with many watchers', () => {
+  const init = () => {
+    const childrenRender = jest.fn()
+    const styleRender = jest.fn()
+
+    document.body.innerHTML = '<div id="root"></div>'
+
+    const store = createComponent({
+      state: {
+        toggle: true,
+        toggle2: true
+      }
+    })
+    const div = createComponent({
+      _type: 'div',
+      $style: () => {
+        styleRender()
+        return {
+          backgroundColor: store.state.toggle ? 'red' : 'blue'
+        }
+      },
+      $children: () => {
+        childrenRender()
+        return store.state.toggle2 && (
+            createComponent({
+              _type: 'div',
+              children: 'test'
+            })
+          )
+      }
+    })
+
+    const container = document.querySelector('#root')
+    renderApp(container, [div])
+
+    return { store, childrenRender, styleRender }
+  }
+
+  const html = color => `<div id="root"><div style="background-color: ${color};"><div>test</div></div></div>`
+
+  test('renders correctly', () => {
+    const { childrenRender, styleRender } = init()
+    expect(document.body.innerHTML).toBe(html('red'))
+    expect(childrenRender.mock.calls.length).toBe(1)
+    expect(styleRender.mock.calls.length).toBe(1)
+  })
+
+  test('renders only changed attributes', async (done) => {
+    const { store, childrenRender, styleRender } = init()
+
+    store.state.toggle = !store.state.toggle
+    await timer()
+
+    expect(document.body.innerHTML).toBe(html('blue'))
+    expect(childrenRender.mock.calls.length).toBe(1)
+    expect(styleRender.mock.calls.length).toBe(2)
+
+
+    store.state.toggle = !store.state.toggle
+    store.state.toggle = !store.state.toggle
+    store.state.toggle = !store.state.toggle
+    await timer()
+
+    expect(document.body.innerHTML).toBe(html('red'))
+    expect(childrenRender.mock.calls.length).toBe(1)
+    expect(styleRender.mock.calls.length).toBe(3)
+
+    done()
+  }, 150)
+})
