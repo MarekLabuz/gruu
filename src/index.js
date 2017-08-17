@@ -221,7 +221,7 @@ const Gruu = ((function () {
     if (lastIndexChildren !== -1) {
       if (action === undefined) {
         const target = get(object, actions.slice(0, lastIndexChildren))
-        if (!value) {
+        if (!exists(value)) {
           target._node.removeAttribute('style')
           if (modifyTree) {
             target.style = value
@@ -376,24 +376,30 @@ const Gruu = ((function () {
       const actions = [...k, key]
       domModificator({ object, actions, value, modifyTree: true })
 
+      object._actionsToUpdate = [...(object._actionsToUpdate || []), actions.join('.')]
+
       if (object._rerender) {
         clearTimeout(object._rerender)
       }
 
       object._rerender = setTimeout(() => {
-        const _actions = actions.join('.')
+        const _actions = object._actionsToUpdate
         if (object._listeners) {
           const listenersIds = Object.keys(object._listeners)
           listenersIds.forEach((id) => {
             if (object._listeners[id]) {
               const { component, keys } = object._listeners[id]
-              const paramsTuUpdate = Object.keys(component).reduce((acc, param) => [
+              const paramsToUpdate = Object.keys(component).reduce((acc, param) => [
                 ...acc.filter(p => p !== param),
-                ...(param.startsWith('$') && keys.has(`${_actions} -> ${param.split('.')[0]}`) ? [param] : [])
+                ...(
+                  param.startsWith('$') &&
+                    _actions.some(_action => keys.has(`${_action} -> ${param.split('.')[0]}`)) ? [param] : []
+                )
               ], [])
+              object._actionsToUpdate = []
 
-              clearListeners(component, paramsTuUpdate)
-              paramsTuUpdate.forEach((param) => {
+              clearListeners(component, paramsToUpdate)
+              paramsToUpdate.forEach((param) => {
                 updateDynamicProperty(component, param)
               })
             }
@@ -478,7 +484,7 @@ const Gruu = ((function () {
   const recursivelyCreateAndRenderComponent = ({ component: obj, parent, nodeParent }) => {
     const object = (!exists(obj) || typeof obj === 'object') ? obj : { _type: 'text', textContent: obj }
 
-    if (!object) {
+    if (!exists(object)) {
       return object
     }
 
@@ -490,7 +496,7 @@ const Gruu = ((function () {
 
     const component = internallyCreateComponent(object)
     internallyRenderComponent({ component, parent, nodeParent })
-    if (component.children && !component._isRendered) {
+    if (exists(component.children) && !component._isRendered) {
       if (!Array.isArray(component.children)) {
         component.children = [component.children]
       }
@@ -511,7 +517,7 @@ const Gruu = ((function () {
   const createComponent = (obj) => {
     const object = (!exists(obj) || typeof obj === 'object') ? obj : { _type: 'text', textContent: obj }
 
-    if (!object) {
+    if (!exists(object)) {
       return object
     }
 
@@ -542,7 +548,7 @@ const Gruu = ((function () {
   const componentToNodeArray = (component, next) => {
     const pureComponent = component && (component.noProxy || component)
 
-    if (pureComponent) {
+    if (exists(pureComponent)) {
       if (pureComponent._node && !next) {
         return [{ id: pureComponent._id, node: pureComponent._node }]
       }

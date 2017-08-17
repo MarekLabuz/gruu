@@ -1230,7 +1230,7 @@ describe('unusual situations', () => {
   })
 })
 
-describe('component with many with many watchers', () => {
+describe('component with many watchers', () => {
   const init = () => {
     const childrenRender = jest.fn()
     const styleRender = jest.fn()
@@ -1270,7 +1270,7 @@ describe('component with many with many watchers', () => {
 
   const html = color => `<div id="root"><div style="background-color: ${color};"><div>test</div></div></div>`
 
-  test('renders correctly', () => {
+  test('renders correctly #1', () => {
     const { childrenRender, styleRender } = init()
     expect(document.body.innerHTML).toBe(html('red'))
     expect(childrenRender.mock.calls.length).toBe(1)
@@ -1287,7 +1287,6 @@ describe('component with many with many watchers', () => {
     expect(childrenRender.mock.calls.length).toBe(1)
     expect(styleRender.mock.calls.length).toBe(2)
 
-
     store.state.toggle = !store.state.toggle
     store.state.toggle = !store.state.toggle
     store.state.toggle = !store.state.toggle
@@ -1296,6 +1295,84 @@ describe('component with many with many watchers', () => {
     expect(document.body.innerHTML).toBe(html('red'))
     expect(childrenRender.mock.calls.length).toBe(1)
     expect(styleRender.mock.calls.length).toBe(3)
+
+    done()
+  }, 150)
+
+  const init2 = () => {
+    const childrenRender = jest.fn()
+    const styleRender = jest.fn()
+
+    document.body.innerHTML = '<div id="root"></div>'
+
+    const store = createComponent({
+      state: {
+        toggle: true,
+        counter: 0
+      }
+    })
+
+    const div = createComponent({
+      _type: 'div',
+      $style: () => {
+        styleRender()
+        return {
+          backgroundColor: store.state.toggle ? 'red' : 'blue'
+        }
+      },
+      $children: () => {
+        childrenRender()
+        return (
+          createComponent({
+            _type: 'div',
+            children: store.state.counter
+          })
+        )
+      }
+    })
+
+    const container = document.querySelector('#root')
+    renderApp(container, [div])
+
+    return { store, childrenRender, styleRender }
+  }
+
+  const html2 = (color, num) => `<div id="root"><div style="background-color: ${color};"><div>${num}</div></div></div>`
+
+  test('renders correctly #2', () => {
+    const { childrenRender, styleRender } = init2()
+    expect(document.body.innerHTML).toBe(html2('red', 0))
+    expect(childrenRender.mock.calls.length).toBe(1)
+    expect(styleRender.mock.calls.length).toBe(1)
+  })
+
+  test('synchronous modifications trigger updates', async (done) => {
+    const { store, childrenRender, styleRender } = init2()
+
+    store.state.toggle = !store.state.toggle
+    store.state.counter += 1
+    await timer()
+
+    expect(document.body.innerHTML).toBe(html2('blue', 1))
+    expect(childrenRender.mock.calls.length).toBe(2)
+    expect(styleRender.mock.calls.length).toBe(2)
+
+
+    store.state.toggle = !store.state.toggle
+    await timer()
+
+    expect(document.body.innerHTML).toBe(html2('red', 1))
+    expect(childrenRender.mock.calls.length).toBe(2)
+    expect(styleRender.mock.calls.length).toBe(3)
+
+    store.state.counter += 1
+    store.state.toggle = !store.state.toggle
+    store.state.counter += 1
+    await timer()
+
+    expect(document.body.innerHTML).toBe(html2('blue', 3))
+    expect(childrenRender.mock.calls.length).toBe(3)
+    expect(styleRender.mock.calls.length).toBe(4)
 
     done()
   }, 150)
