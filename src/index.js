@@ -6,7 +6,6 @@ const Gruu = ((function () {
 
   const uuid = () => `${chunk(8)}-${chunk(4)}-${chunk(4)}-${chunk(4)}-${chunk(12)}`
 
-  const proxyAwareArrayFunctions = ['push', 'unshift']
   const alterKeyCondition = key => key === 'children' || key.startsWith('_') || key.startsWith('$')
 
   const stateModificationHandler = ({ object, actions, value, modifyTree }) => {
@@ -366,7 +365,7 @@ const Gruu = ((function () {
         return new Proxy(target[key].noProxy || target[key], handler(component, ...(isType ? [] : [...k, key])))
       }
 
-      if (typeof target[key] === 'function' && !proxyAwareArrayFunctions.includes(key)) {
+      if (typeof target[key] === 'function') {
         return target[key].bind(target)
       }
 
