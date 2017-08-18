@@ -356,27 +356,17 @@ describe('adding and removing components dynamically', () => {
     expect(document.body.innerHTML).toBe('<div id="root"><ul><li>2</li><li>3</li><li>4</li></ul></div>')
   })
 
-  test('adds new element (pure) with push', () => {
-    ul.children.push({ _type: 'li', children: [{ _type: 'text', textContent: 5 }] })
-    expect(document.body.innerHTML).toBe('<div id="root"><ul><li>2</li><li>3</li><li>4</li><li>5</li></ul></div>')
-  })
-
-  test('adds new element (component) with push', () => {
-    ul.children.push(createComponent({ _type: 'li', children: [{ _type: 'text', textContent: 5 }] }))
-    expect(document.body.innerHTML).toBe('<div id="root"><ul><li>2</li><li>3</li><li>4</li><li>5</li></ul></div>')
-  })
-
-  test('adds new element (pure) with assign', () => {
+  test('adds new element (pure)', () => {
     ul.children = [...ul.children, { _type: 'li', children: [{ _type: 'text', textContent: 5 }] }]
     expect(document.body.innerHTML).toBe('<div id="root"><ul><li>2</li><li>3</li><li>4</li><li>5</li></ul></div>')
   })
 
-  test('adds new element (component) with assign', () => {
+  test('adds new element (component)', () => {
     ul.children = [...ul.children, createComponent({ _type: 'li', children: [{ _type: 'text', textContent: 5 }] })]
     expect(document.body.innerHTML).toBe('<div id="root"><ul><li>2</li><li>3</li><li>4</li><li>5</li></ul></div>')
   })
 
-  test('removes element with assign', () => {
+  test('removes element', () => {
     ul.children[2] = null
     expect(document.body.innerHTML).toBe('<div id="root"><ul><li>2</li><li>3</li></ul></div>')
   })

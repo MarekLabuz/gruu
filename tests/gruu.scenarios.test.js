@@ -338,7 +338,10 @@ describe('replacing nodes (dom components)', () => {
               _type: 'button',
               textContent: 'Add Jane',
               onclick () {
-                store.state.data.push(['Jane', 'Forest', Math.floor(Math.random() * 25) + 20])
+                store.state.data = [
+                  ...store.state.data,
+                  ['Jane', 'Forest', Math.floor(Math.random() * 25) + 20]
+                ]
               }
             }]
           }]
@@ -354,7 +357,10 @@ describe('replacing nodes (dom components)', () => {
             _type: 'button',
             textContent: 'Add Jane 2',
             onclick () {
-              store.state.data.push(['Jane', 'Forest', Math.floor(Math.random() * 25) + 100])
+              store.state.data = [
+                ...store.state.data,
+                ['Jane', 'Forest', Math.floor(Math.random() * 25) + 100]
+              ]
             }
           }]
         }]
@@ -414,7 +420,10 @@ describe('replacing nodes (phantom components)', () => {
               _type: 'button',
               textContent: 'Add Jane',
               onclick () {
-                store.state.data.push(['Jane', 'Forest', Math.floor(Math.random() * 25) + 20])
+                store.state.data = [
+                  ...store.state.data,
+                  ['Jane', 'Forest', Math.floor(Math.random() * 25) + 20]
+                ]
               }
             }]
           }]
@@ -429,7 +438,10 @@ describe('replacing nodes (phantom components)', () => {
             _type: 'button',
             textContent: 'Add Jane 2',
             onclick () {
-              store.state.data.push(['Jane', 'Forest', Math.floor(Math.random() * 25) + 100])
+              store.state.data = [
+                ...store.state.data,
+                ['Jane', 'Forest', Math.floor(Math.random() * 25) + 100]
+              ]
             }
           }]
         }]
