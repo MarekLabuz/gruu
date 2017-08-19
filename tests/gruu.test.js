@@ -67,6 +67,60 @@ describe('text as a component', () => {
   })
 })
 
+describe('empty text as a component with subscription', () => {
+  const init = () => {
+    document.body.innerHTML = '<div id="root"></div>'
+
+    const store = createComponent({
+      state: {
+        data: [{
+          action: 'test'
+        }]
+      }
+    })
+
+    const app = createComponent({
+      _type: 'div',
+      $children: () => store.state.data.map(({ action }) => ({
+        _type: 'div',
+        children: action
+      }))
+    })
+
+    const container = document.querySelector('#root')
+    renderApp(container, [app])
+
+    return { store }
+  }
+
+  test('renders correctly', () => {
+    init()
+    expect(document.body.innerHTML).toBe('<div id="root"><div><div>test</div></div></div>')
+  })
+
+  test('changes children to empty text', async (done) => {
+    const { store } = init()
+
+    store.state.data = [{ action: '' }]
+    await timer()
+    expect(document.body.innerHTML).toBe('<div id="root"><div><div></div></div></div>')
+
+    store.state.data = [{ action: 'test #2' }]
+    await timer()
+    expect(document.body.innerHTML).toBe('<div id="root"><div><div>test #2</div></div></div>')
+
+    store.state.data = [{ action: '' }, { action: 'test #3' }]
+    await timer()
+    expect(document.body.innerHTML).toBe('<div id="root"><div><div></div><div>test #3</div></div></div>')
+
+    store.state.data = [{ action: 'test #2' }]
+    await timer()
+    expect(document.body.innerHTML).toBe('<div id="root"><div><div>test #2</div></div></div>')
+
+    done()
+  }, 150)
+})
+
 describe('number as a component', () => {
   const init1 = () => {
     document.body.innerHTML = '<div id="root"></div>'

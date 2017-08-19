@@ -153,7 +153,7 @@ const Gruu = ((function () {
             const component = value.noProxy || value
 
             Object.keys(target).concat(Object.keys(component)).forEach((key) => {
-              component[key] = component[key] || (alterKeyCondition(key) ? target[key] : component[key])
+              component[key] = exists(component[key]) || !alterKeyCondition(key) ? component[key] : target[key]
             })
 
             const componentKeys = Object.keys(component)
