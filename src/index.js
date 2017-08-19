@@ -137,7 +137,11 @@ const Gruu = ((function () {
 
             componentNodeArray.forEach(({ node }) => {
               if (node) {
-                nodeParent._node.insertBefore(node, parentNodeArray[index] && parentNodeArray[index].node)
+                if (!parentNodeArray[index] || !parentNodeArray[index].node || parentNodeArray[index].node.parentNode) {
+                  nodeParent._node.insertBefore(node, parentNodeArray[index] && parentNodeArray[index].node)
+                } else {
+                  nodeParent._node.appendChild(node)
+                }
               }
             })
 
@@ -466,7 +470,9 @@ const Gruu = ((function () {
       if (this._isRendered) {
         if (this._node) {
           const nodeParent = findClosestNodeParent(this._parent)
-          nodeParent._node.removeChild(this._node)
+          if (this._node.parentNode) {
+            nodeParent._node.removeChild(this._node)
+          }
         } else if (this.children) {
           this.children.forEach((child) => {
             if (child) {
