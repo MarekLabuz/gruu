@@ -3,12 +3,10 @@ const { createComponent, renderApp } = require('../src/index')
 const timer = () => new Promise(resolve => setTimeout(resolve))
 
 describe('new component while assigning', () => {
-  let main
-
-  beforeEach(() => {
+  const init1 = () => {
     document.body.innerHTML = '<div id="root"></div>'
 
-    main = createComponent({
+    const main = createComponent({
       _type: 'div',
       children: [{
         _type: 'div',
@@ -21,17 +19,67 @@ describe('new component while assigning', () => {
 
     const container = document.querySelector('#root')
     renderApp(container, [main])
-  })
 
-  test('renders correctly', () => {
+    return { main }
+  }
+
+  test('renders correctly #1', () => {
+    init1()
     expect(document.body.innerHTML)
       .toBe('<div id="root"><div><div style="background-color: red;">red?</div></div></div>')
   })
 
   test('overwrites all properties', () => {
+    const { main } = init1()
     main.children[0] = { _type: 'div', textContent: 'not red!' }
     expect(document.body.innerHTML)
       .toBe('<div id="root"><div><div>not red!</div></div></div>')
+  })
+
+  const init2 = () => {
+    document.body.innerHTML = '<div id="root"></div>'
+
+    const app = createComponent({
+      _type: 'div',
+      children: [
+        { _type: 'div', children: [{ _type: 'span', textContent: 'test #1' }, { _type: 'p', textContent: 'test #2' }] },
+        'test #3'
+      ]
+    })
+
+    const container = document.querySelector('#root')
+    renderApp(container, [app])
+
+    return { app }
+  }
+
+  test('renders correctly #2', () => {
+    const { app } = init2()
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div><div><span>test #1</span><p>test #2</p></div>test #3</div></div>')
+    expect(app.children[0].children[0]._type).toBe('span')
+    expect(app.children[0].children[0].textContent).toBe('test #1')
+    expect(app.children[0].children[1]._type).toBe('p')
+    expect(app.children[0].children[1].textContent).toBe('test #2')
+  })
+
+  test('removes all not existing properties', () => {
+    const { app } = init2()
+    app.children[0] = { _type: 'div', textContent: 'test #4' }
+    expect(document.body.innerHTML).toBe('<div id="root"><div><div>test #4</div>test #3</div></div>')
+    expect(app.children[0].children[0]).toBe(undefined)
+    expect(app.children[0].children.length).toBe(1)
+
+    app.children[0] = {
+      _type: 'div',
+      children: [{ _type: 'span', textContent: 'test #1' }, { _type: 'p', textContent: 'test #2' }]
+    }
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div><div><span>test #1</span><p>test #2</p></div>test #3</div></div>')
+    expect(app.children[0].children[0]._type).toBe('span')
+    expect(app.children[0].children[0].textContent).toBe('test #1')
+    expect(app.children[0].children[1]._type).toBe('p')
+    expect(app.children[0].children[1].textContent).toBe('test #2')
   })
 })
 

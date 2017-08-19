@@ -6,8 +6,6 @@ const Gruu = ((function () {
 
   const uuid = () => `${chunk(8)}-${chunk(4)}-${chunk(4)}-${chunk(4)}-${chunk(12)}`
 
-  const alterKeyCondition = key => key === 'children' || key.startsWith('_') || key.startsWith('$')
-
   const stateModificationHandler = ({ object, actions, value, modifyTree }) => {
     if (modifyTree) {
       if (actions.length === 0) {
@@ -151,25 +149,27 @@ const Gruu = ((function () {
             }
           } else {
             const component = value.noProxy || value
-
-            Object.keys(target).concat(Object.keys(component)).forEach((key) => {
-              component[key] = exists(component[key]) || !alterKeyCondition(key) ? component[key] : target[key]
+            const targetKeys = Object.keys(target)
+            targetKeys.forEach((key) => {
+              if (key.startsWith('_') || key.startsWith('$')) {
+                component[key] = component[key] || target[key]
+              }
             })
-
             const componentKeys = Object.keys(component)
-
+            const notExisting = targetKeys.filter(key => !componentKeys.includes(key))
+            notExisting.forEach((key) => {
+              domModificator({ object, actions: [...actions, key], value: component[key], valueParent: component })
+            })
             componentKeys.forEach((key) => {
               if (!key.startsWith('_') && !key.startsWith('$')) {
                 domModificator({ object, actions: [...actions, key], value: component[key], valueParent: component })
               }
             })
-
             componentKeys.forEach((key) => {
               if (key.startsWith('$')) {
                 updateDynamicProperty(component, key)
               }
             })
-
             if (modifyTree) {
               target._parent.children[action] = component
               preTarget.children[action] = component
@@ -383,6 +383,7 @@ const Gruu = ((function () {
 
       object._rerender = setTimeout(() => {
         const _actions = object._actionsToUpdate
+        object._actionsToUpdate = []
         if (object._listeners) {
           const listenersIds = Object.keys(object._listeners)
           listenersIds.forEach((id) => {
@@ -395,7 +396,6 @@ const Gruu = ((function () {
                     _actions.some(_action => keys.has(`${_action} -> ${param.split('.')[0]}`)) ? [param] : []
                 )
               ], [])
-              object._actionsToUpdate = []
 
               clearListeners(component, paramsToUpdate)
               paramsToUpdate.forEach((param) => {
