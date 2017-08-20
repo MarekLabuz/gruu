@@ -23,10 +23,10 @@ const Gruu = ((function () {
   const findClosestNodeParent = object => (object._node ? object : findClosestNodeParent(object._parent))
 
   const clearListeners = (component, paramsTuRemove) => {
-    if (component._isRendered && component._watchers) {
-      Object.keys(component._watchers).forEach((w) => {
+    if (component._r && component._w) {
+      Object.keys(component._w).forEach((w) => {
         if (paramsTuRemove) {
-          const set = component._watchers[w]._listeners[component._id].keys
+          const set = component._w[w]._l[component._id].keys
           set.forEach((key) => {
             const param = key.split('->')[1].trim()
             if (paramsTuRemove.includes(param)) {
@@ -34,12 +34,12 @@ const Gruu = ((function () {
             }
           })
           if (set.size === 0) {
-            delete component._watchers[w]._listeners[component._id]
-            delete component._watchers[w]
+            delete component._w[w]._l[component._id]
+            delete component._w[w]
           }
         } else {
-          delete component._watchers[w]._listeners[component._id]
-          delete component._watchers[w]
+          delete component._w[w]._l[component._id]
+          delete component._w[w]
         }
       })
     }
@@ -246,31 +246,28 @@ const Gruu = ((function () {
     }
   }
 
-  const destinations = {
-    DEFAULT: 'DEFAULT',
-    STATE: 'STATE',
-    CHILDREN: 'CHILDREN',
-    NODE: 'NODE',
-    NONE: 'NONE'
-  }
+  const DEFAULT = 0
+  const STATE = 1
+  const CHILDREN = 2
+  const NODE = 3
 
   const findDestination = (actions = []) => {
     let destination = ''
     let isNode = true
 
     for (const action of actions) {
-      if (destination === destinations.DEFAULT || action.startsWith('$')) {
-        return destinations.DEFAULT
-      } else if (destination === destinations.STATE || (action === 'state' && isNode)) {
-        return destinations.STATE
+      if (destination === DEFAULT || action.startsWith('$')) {
+        return DEFAULT
+      } else if (destination === STATE || (action === 'state' && isNode)) {
+        return STATE
       } else if (action === 'children' && isNode) {
-        destination = destinations.CHILDREN
+        destination = CHILDREN
         isNode = false
-      } else if (destination === destinations.CHILDREN && !isNaN(parseInt(action, 10))) {
-        destination = destinations.CHILDREN
+      } else if (destination === CHILDREN && !isNaN(parseInt(action, 10))) {
+        destination = CHILDREN
         isNode = true
       } else if (isNode) {
-        destination = destinations.NODE
+        destination = NODE
         isNode = true
       }
     }
@@ -291,16 +288,16 @@ const Gruu = ((function () {
     const object = obj.noProxy || obj
 
     switch (destination) {
-      case destinations.STATE:
+      case STATE:
         stateModificationHandler(object, actions, value, modifyTree)
         break
-      case destinations.CHILDREN:
+      case CHILDREN:
         childrenModificationHandler(object, actions, value, valueParent, modifyTree)
         break
-      case destinations.NODE:
+      case NODE:
         nodeModificationHandler(object, actions, value, modifyTree)
         break
-      case destinations.DEFAULT:
+      case DEFAULT:
         defaultModificationHandler(object, actions, value, modifyTree)
         break
       default:
@@ -320,24 +317,24 @@ const Gruu = ((function () {
 
       const { component: stackElement, key: stackKey } = processStack.slice(-1)[0] || {}
       if (stackElement) {
-        if (!object._listeners) {
-          (object.noProxy || object)._listeners = {}
+        if (!object._l) {
+          (object.noProxy || object)._l = {}
         }
 
         const newKey = [...k, key].join('.')
 
-        if (!object._listeners[stackElement._id]) {
-          object._listeners[stackElement._id] = {
+        if (!object._l[stackElement._id]) {
+          object._l[stackElement._id] = {
             keys: new Set()
           }
         }
-        object._listeners[stackElement._id].component = stackElement
-        object._listeners[stackElement._id].keys.add(`${newKey} -> ${stackKey}`)
+        object._l[stackElement._id].component = stackElement
+        object._l[stackElement._id].keys.add(`${newKey} -> ${stackKey}`)
 
-        if (!stackElement._watchers) {
-          stackElement._watchers = {}
+        if (!stackElement._w) {
+          stackElement._w = {}
         }
-        stackElement._watchers[object._id] = object
+        stackElement._w[object._id] = object
       }
 
       const isType = target[key] && (target[key]._type || target[key].children)
@@ -366,11 +363,11 @@ const Gruu = ((function () {
       object._rerender = setTimeout(() => {
         const _actions = object._actionsToUpdate
         object._actionsToUpdate = []
-        if (object._listeners) {
-          const listenersIds = Object.keys(object._listeners)
+        if (object._l) {
+          const listenersIds = Object.keys(object._l)
           listenersIds.forEach((id) => {
-            if (object._listeners[id]) {
-              const { component, keys } = object._listeners[id]
+            if (object._l[id]) {
+              const { component, keys } = object._l[id]
               const paramsToUpdate = Object.keys(component).reduce((acc, param) => [
                 ...acc.filter(p => p !== param),
                 ...(
@@ -418,7 +415,7 @@ const Gruu = ((function () {
 
   const internallyCreateComponent = (object) => {
     const component = object.noProxy || object
-    if (component._isRendered) {
+    if (component._r) {
       return component
     }
     component._id = component._id || uuid()
@@ -445,7 +442,7 @@ const Gruu = ((function () {
 
     component._unmount = function () {
       clearListeners(this)
-      if (this._isRendered) {
+      if (this._r) {
         if (this._node) {
           const nodeParent = findClosestNodeParent(this._parent)
           if (this._node.parentNode) {
@@ -471,7 +468,7 @@ const Gruu = ((function () {
       return object
     }
 
-    if (object._isRendered) {
+    if (object._r) {
       Object.keys(object).forEach((key) => {
         updateDynamicProperty(object, key)
       })
@@ -479,7 +476,7 @@ const Gruu = ((function () {
 
     const component = internallyCreateComponent(object)
     internallyRenderComponent({ component, parent, nodeParent })
-    if (exists(component.children) && !component._isRendered) {
+    if (exists(component.children) && !component._r) {
       if (!Array.isArray(component.children)) {
         component.children = [component.children]
       }
@@ -492,7 +489,7 @@ const Gruu = ((function () {
       ))
     }
 
-    component._isRendered = true
+    component._r = true
 
     return component
   }
@@ -571,7 +568,7 @@ const Gruu = ((function () {
 
   return Object.assign(
     { createComponent, renderApp, browserHistory, route },
-    window.__DEV__ ? { destinations, findDestination } : {}
+    window.__DEV__ ? { destinations: { DEFAULT, STATE, CHILDREN, NODE }, findDestination } : {}
   )
 })())
 

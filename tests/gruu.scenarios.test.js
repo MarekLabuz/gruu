@@ -151,7 +151,7 @@ describe('dynamically render component with subscription', () => {
     `<div id="root"><div><div class="${c1}"><span>${c2}</span></div></div><button>store</button>` +
       '<button>main</button></div>'
 
-  const numberOfStoreListeners = () => Object.keys(store._listeners).length
+  const numberOfStoreListeners = () => Object.keys(store._l).length
 
   test('renders correctly', () => {
     expect(document.body.innerHTML).toBe(html(0, 0))
