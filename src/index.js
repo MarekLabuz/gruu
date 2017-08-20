@@ -6,7 +6,7 @@ const Gruu = ((function () {
 
   const uuid = () => `${chunk(8)}-${chunk(4)}-${chunk(4)}-${chunk(4)}-${chunk(12)}`
 
-  const stateModificationHandler = ({ object, actions, value, modifyTree }) => {
+  const stateModificationHandler = (object, actions, value, modifyTree) => {
     if (modifyTree) {
       if (actions.length === 0) {
         object.state = value
@@ -49,17 +49,14 @@ const Gruu = ((function () {
     if (key.startsWith('$')) {
       const pureKey = key.slice(1)
       processStack.push({ component, key })
-      domModificator({
-        object: component,
-        actions: [pureKey],
-        value: value ? value() : component[key](),
+      domModificator(component, [pureKey], value ? value() : component[key](), {
         modifyTree: true
       })
       processStack.pop()
     }
   }
 
-  const handleComponentRender = ({ value, target, preTarget, modifyTree, action, valueParent, object }) => {
+  const handleComponentRender = (value, target, preTarget, modifyTree, action, valueParent, object) => {
     let component = value.noProxy || value
     component = recursivelyCreateAndRenderComponent({ component, parent: preTarget })
 
@@ -109,7 +106,7 @@ const Gruu = ((function () {
     }
   }
 
-  const childrenModificationHandler = ({ object, actions, value, valueParent, modifyTree }) => {
+  const childrenModificationHandler = (object, actions, value, valueParent, modifyTree) => {
     const lastIndexChildren = actions.lastIndexOf('children')
     const action = actions.slice(lastIndexChildren + 1)[0]
 
@@ -136,7 +133,7 @@ const Gruu = ((function () {
         const newChild = val[i]
 
         if (!currentChild || !newChild || !currentChild._key || !newChild._key || currentChild._key === newChild._key) {
-          domModificator({ object, actions: [...actions, `${i}`], value: newChild, valueParent, modifyTree })
+          domModificator(object, [...actions, `${i}`], newChild, { valueParent, modifyTree })
           i += 1
         } else {
           currentChild._unmount()
@@ -159,7 +156,7 @@ const Gruu = ((function () {
         } else if (exists(target) && exists(value)) {
           clearListeners(target)
           if ((target._type || value._type) && (!target._type || !value._type || target._type !== value._type)) {
-            handleComponentRender({ value, target, preTarget, modifyTree, action, valueParent })
+            handleComponentRender(value, target, preTarget, modifyTree, action, valueParent)
           } else {
             const component = value.noProxy || value
             const targetKeys = Object.keys(target)
@@ -171,14 +168,14 @@ const Gruu = ((function () {
             const componentKeys = Object.keys(component)
             const notExisting = targetKeys.filter(key => !componentKeys.includes(key))
             notExisting.forEach((key) => {
-              domModificator({ object, actions: [...actions, key], value: component[key], valueParent: component })
+              domModificator(object, [...actions, key], component[key], { valueParent: component })
             })
             componentKeys.forEach((key) => {
               if (typeof component[key] === 'function') {
                 component[key] = component[key].bind(new Proxy(component, handler(component)))
               }
               if (!key.startsWith('_') && !key.startsWith('$')) {
-                domModificator({ object, actions: [...actions, key], value: component[key], valueParent: component })
+                domModificator(object, [...actions, key], component[key], { valueParent: component })
               }
             })
             componentKeys.forEach((key) => {
@@ -192,13 +189,13 @@ const Gruu = ((function () {
             }
           }
         } else if (!exists(target) && exists(value)) {
-          handleComponentRender({ value, target, preTarget, modifyTree, action, valueParent, object })
+          handleComponentRender(value, target, preTarget, modifyTree, action, valueParent, object)
         }
       }
     }
   }
 
-  const nodeModificationHandler = ({ object, actions, value, modifyTree }) => {
+  const nodeModificationHandler = (object, actions, value, modifyTree) => {
     const lastIndexChildren = actions.lastIndexOf('style')
     const action = actions.slice(lastIndexChildren + 1)[0]
 
@@ -280,7 +277,7 @@ const Gruu = ((function () {
     return destination
   }
 
-  const defaultModificationHandler = ({ object, actions, value, modifyTree }) => {
+  const defaultModificationHandler = (object, actions, value, modifyTree) => {
     const target = get(object, actions.slice(0, -1))
     const action = actions.slice(-1)[0]
     if (modifyTree) {
@@ -288,23 +285,23 @@ const Gruu = ((function () {
     }
   }
 
-  const domModificator = ({ object: obj, actions, value, valueParent, modifyTree }) => {
+  const domModificator = (obj, actions, value, { valueParent, modifyTree }) => {
     const destination = findDestination(actions)
 
     const object = obj.noProxy || obj
 
     switch (destination) {
       case destinations.STATE:
-        stateModificationHandler({ object, actions, value, modifyTree })
+        stateModificationHandler(object, actions, value, modifyTree)
         break
       case destinations.CHILDREN:
-        childrenModificationHandler({ object, actions, value, valueParent, modifyTree })
+        childrenModificationHandler(object, actions, value, valueParent, modifyTree)
         break
       case destinations.NODE:
-        nodeModificationHandler({ object, actions, value, modifyTree })
+        nodeModificationHandler(object, actions, value, modifyTree)
         break
       case destinations.DEFAULT:
-        defaultModificationHandler({ object, actions, value, modifyTree })
+        defaultModificationHandler(object, actions, value, modifyTree)
         break
       default:
         break
@@ -358,7 +355,7 @@ const Gruu = ((function () {
     },
     set (target, key, value) {
       const actions = [...k, key]
-      domModificator({ object, actions, value, modifyTree: true })
+      domModificator(object, actions, value, { modifyTree: true })
 
       object._actionsToUpdate = [...(object._actionsToUpdate || []), actions.join('.')]
 
