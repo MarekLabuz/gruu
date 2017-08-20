@@ -1469,3 +1469,124 @@ describe('component with many watchers', () => {
     done()
   }, 150)
 })
+
+describe('components with "this" context', () => {
+  const init1 = () => {
+    const clickFn = jest.fn()
+    document.body.innerHTML = '<div id="root"></div>'
+
+    const button = {
+      _type: 'button',
+      textContent: 'test button',
+      onclick () {
+        clickFn(this)
+      }
+    }
+
+    const app = createComponent({
+      _type: 'div',
+      children: [button]
+    })
+
+    const container = document.querySelector('#root')
+    renderApp(container, [app])
+
+    return { app, button, clickFn }
+  }
+
+  test('renders correctly #1', () => {
+    const { app, button, clickFn } = init1()
+    expect(document.body.innerHTML).toBe('<div id="root"><div><button>test button</button></div></div>')
+    expect(app.children[0].noProxy).toBe(button)
+    const buttonElem = document.getElementsByTagName('button')[0]
+    buttonElem.click()
+    expect(clickFn.mock.calls[0][0].noProxy).toBe(button)
+  })
+
+  test('transfers context correctly', () => {
+    const { app } = init1()
+    const clickFn = jest.fn()
+    const newButton = {
+      _type: 'button',
+      textContent: 'test button #2',
+      onclick () {
+        clickFn(this)
+      }
+    }
+    app.children = [newButton]
+    expect(document.body.innerHTML).toBe('<div id="root"><div><button>test button #2</button></div></div>')
+    expect(app.children[0].noProxy).toBe(newButton)
+    const buttonElem = document.getElementsByTagName('button')[0]
+    buttonElem.click()
+    expect(clickFn.mock.calls[0][0].noProxy).toBe(newButton)
+  })
+
+  const init2 = () => {
+    const clickFn = jest.fn()
+    document.body.innerHTML = '<div id="root"></div>'
+
+    const div = createComponent({
+      _type: 'div',
+      state: {
+        counter: 10
+      },
+      $children () {
+        clickFn(this)
+        return this.state.counter
+      }
+    })
+
+    const app = createComponent({
+      _type: 'div',
+      children: [div]
+    })
+
+    const container = document.querySelector('#root')
+    renderApp(container, [app])
+
+    return { app, div, clickFn }
+  }
+
+  test('renders correctly #2', async (done) => {
+    const { app, div, clickFn } = init2()
+    expect(document.body.innerHTML).toBe('<div id="root"><div><div>10</div></div></div>')
+    expect(app.children[0].noProxy).toBe(div.noProxy)
+    expect(clickFn.mock.calls[0][0].noProxy).toBe(div.noProxy)
+
+    div.state.counter += 10
+    await timer()
+    expect(document.body.innerHTML).toBe('<div id="root"><div><div>20</div></div></div>')
+    expect(app.children[0].noProxy).toBe(div.noProxy)
+    expect(clickFn.mock.calls[0][0].noProxy).toBe(div.noProxy)
+
+    done()
+  }, 150)
+
+  test('transfers context correctly in dynamic property', async (done) => {
+    const { app } = init2()
+    const clickFn = jest.fn()
+    const newDiv = createComponent({
+      _type: 'div',
+      state: {
+        counter: 200
+      },
+      $children () {
+        clickFn(this)
+        return this.state.counter
+      }
+    })
+    app.children[0] = newDiv
+
+    expect(document.body.innerHTML).toBe('<div id="root"><div><div>200</div></div></div>')
+    expect(app.children[0].noProxy).toBe(newDiv.noProxy)
+    expect(clickFn.mock.calls[0][0].noProxy).toBe(newDiv.noProxy)
+
+    newDiv.state.counter += 100
+    await timer()
+    expect(document.body.innerHTML).toBe('<div id="root"><div><div>300</div></div></div>')
+    expect(app.children[0].noProxy).toBe(newDiv.noProxy)
+    expect(clickFn.mock.calls[0][0].noProxy).toBe(newDiv.noProxy)
+
+    done()
+  }, 150)
+})

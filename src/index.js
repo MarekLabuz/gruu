@@ -174,6 +174,9 @@ const Gruu = ((function () {
               domModificator({ object, actions: [...actions, key], value: component[key], valueParent: component })
             })
             componentKeys.forEach((key) => {
+              if (typeof component[key] === 'function') {
+                component[key] = component[key].bind(new Proxy(component, handler(component)))
+              }
               if (!key.startsWith('_') && !key.startsWith('$')) {
                 domModificator({ object, actions: [...actions, key], value: component[key], valueParent: component })
               }
@@ -240,7 +243,7 @@ const Gruu = ((function () {
           target[lastAction] = value
         }
         if (target._node) {
-          target._node[lastAction] = value
+          target._node[lastAction] = value || ''
         }
       }
     }
@@ -424,9 +427,9 @@ const Gruu = ((function () {
     component._id = component._id || uuid()
 
     Object.keys(component).forEach((key) => {
-      component[key] = typeof component[key] === 'function'
-        ? component[key].bind(new Proxy(component, handler(component)))
-        : component[key]
+      if (typeof component[key] === 'function') {
+        component[key] = component[key].bind(new Proxy(component, handler(component)))
+      }
     })
 
     Object.keys(component).forEach((key) => {
