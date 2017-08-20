@@ -81,6 +81,59 @@ describe('new component while assigning', () => {
     expect(app.children[0].children[1]._type).toBe('p')
     expect(app.children[0].children[1].textContent).toBe('test #2')
   })
+
+  const init3 = () => {
+    document.body.innerHTML = '<div id="root"></div>'
+
+    const divInner = createComponent({
+      _type: 'div',
+      children: 'test'
+    })
+
+    const divOuter = createComponent({
+      _type: 'div',
+      children: [divInner]
+    })
+
+    const app = createComponent({
+      _type: 'div',
+      children: [divOuter]
+    })
+
+    const container = document.querySelector('#root')
+    renderApp(container, [app])
+
+    return { app, divOuter, divInner }
+  }
+
+  test('renders correctly #3', () => {
+    const { app, divOuter, divInner } = init3()
+    expect(document.body.innerHTML).toBe('<div id="root"><div><div><div>test</div></div></div></div>')
+    expect(divInner._parent).toBe(divOuter.noProxy)
+    expect(divOuter.children[0].noProxy).toBe(divInner.noProxy)
+    expect(divOuter._parent).toBe(app.noProxy)
+    expect(app.children[0].noProxy).toBe(divOuter.noProxy)
+  })
+
+  test('changes _parent  and children correctly', () => {
+    const { app } = init3()
+    const newDivInner = createComponent({
+      _type: 'div',
+      children: 'test #2'
+    })
+    const newDivOuter = createComponent({
+      _type: 'div',
+      children: [newDivInner]
+    })
+
+    app.children = [newDivOuter]
+
+    expect(document.body.innerHTML).toBe('<div id="root"><div><div><div>test #2</div></div></div></div>')
+    expect(newDivInner._parent).toBe(newDivOuter.noProxy)
+    expect(newDivOuter.children[0].noProxy).toBe(newDivInner.noProxy)
+    expect(newDivOuter._parent).toBe(app.noProxy)
+    expect(app.children[0].noProxy).toBe(newDivOuter.noProxy)
+  })
 })
 
 describe('text as a component', () => {

@@ -165,6 +165,9 @@ const Gruu = ((function () {
                 component[key] = component[key] || target[key]
               }
             })
+            if (valueParent) {
+              component._parent = valueParent
+            }
             const componentKeys = Object.keys(component)
             const notExisting = targetKeys.filter(key => !componentKeys.includes(key))
             notExisting.forEach((key) => {
