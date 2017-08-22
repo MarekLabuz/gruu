@@ -22,6 +22,12 @@ const Gruu = ((function () {
 
   const findClosestNodeParent = object => (object._node ? object : findClosestNodeParent(object._parent))
 
+  const bindWithProxy = (fn, component) => (
+    component.noProxy
+      ? component
+      : fn.bind(new Proxy(component, handler(component)))
+  )
+
   const clearListeners = (component, paramsTuRemove) => {
     if (component._r && component._w) {
       Object.keys(component._w).forEach((w) => {
@@ -49,9 +55,12 @@ const Gruu = ((function () {
     if (key.startsWith('$')) {
       const pureKey = key.slice(1)
       processStack.push({ component, key })
-      domModificator(component, [pureKey], value ? value() : component[key](), {
-        modifyTree: true
-      })
+      domModificator(
+        component,
+        [pureKey],
+        value ? bindWithProxy(value, component)() : bindWithProxy(component[key], component)(),
+        { modifyTree: true }
+      )
       processStack.pop()
     }
   }
@@ -159,33 +168,45 @@ const Gruu = ((function () {
             handleComponentRender(value, target, preTarget, modifyTree, action, valueParent)
           } else {
             const component = value.noProxy || value
-            const targetKeys = Object.keys(target)
-            targetKeys.forEach((key) => {
-              if (key.startsWith('_') || key.startsWith('$')) {
-                component[key] = component[key] || target[key]
+            const keys = {
+              $: new Set(),
+              _: new Set(),
+              other: new Set()
+            }
+
+            const componentKeys = Object.keys(component)
+
+            Object.keys(target).concat(componentKeys).forEach((key) => {
+              if (key.startsWith('$')) {
+                keys.$.add(key)
+                keys.other.add(key.slice(1))
+              } else if (key.startsWith('_')) {
+                component[key] = target[key]
+              } else {
+                keys.other.add(key)
               }
             })
+
             if (valueParent) {
               component._parent = valueParent
             }
-            const componentKeys = Object.keys(component)
-            const notExisting = targetKeys.filter(key => !componentKeys.includes(key))
-            notExisting.forEach((key) => {
+
+            keys.$.forEach((key) => {
+              const pureKey = key.slice(1)
+              processStack.push({ component, key })
+              const v = bindWithProxy(component[key], component)()
+              component[pureKey] = Array.isArray(v) || key !== '$children' ? v : [v]
+              processStack.pop()
+            })
+
+            keys.other.forEach((key) => {
+              if (typeof component[key] === 'function') {
+                component[key] = bindWithProxy(component[key], component, handler(component))
+              }
+
               domModificator(object, [...actions, key], component[key], { valueParent: component })
             })
-            componentKeys.forEach((key) => {
-              if (typeof component[key] === 'function') {
-                component[key] = component[key].bind(new Proxy(component, handler(component)))
-              }
-              if (!key.startsWith('_') && !key.startsWith('$')) {
-                domModificator(object, [...actions, key], component[key], { valueParent: component })
-              }
-            })
-            componentKeys.forEach((key) => {
-              if (key.startsWith('$')) {
-                updateDynamicProperty(component, key)
-              }
-            })
+
             if (modifyTree) {
               target._parent.children[action] = component
               preTarget.children[action] = component
@@ -425,7 +446,7 @@ const Gruu = ((function () {
 
     Object.keys(component).forEach((key) => {
       if (typeof component[key] === 'function') {
-        component[key] = component[key].bind(new Proxy(component, handler(component)))
+        component[key] = bindWithProxy(component[key], component)
       }
     })
 
@@ -433,7 +454,7 @@ const Gruu = ((function () {
       if (key.startsWith('$')) {
         const pureKey = key.slice(1)
         processStack.push({ component, key })
-        const value = component[key]()
+        const value = bindWithProxy(component[key], component)()
         component[pureKey] = Array.isArray(value) || key !== '$children' ? value : [value]
         processStack.pop()
       }
