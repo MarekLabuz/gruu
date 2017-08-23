@@ -22,7 +22,7 @@ const Gruu = ((function () {
 
   const findClosestNodeParent = object => (object._node ? object : findClosestNodeParent(object._parent))
 
-  const bindWithProxy = (fn, component) => (
+  const bindWithProxy = (component, fn = () => null) => (
     component.noProxy
       ? component
       : fn.bind(new Proxy(component, handler(component)))
@@ -58,7 +58,7 @@ const Gruu = ((function () {
       domModificator(
         component,
         [pureKey],
-        value ? bindWithProxy(value, component)() : bindWithProxy(component[key], component)(),
+        value ? bindWithProxy(component, value)() : bindWithProxy(component, component[key])(),
         { modifyTree: true }
       )
       processStack.pop()
@@ -194,14 +194,14 @@ const Gruu = ((function () {
             keys.$.forEach((key) => {
               const pureKey = key.slice(1)
               processStack.push({ component, key })
-              const v = bindWithProxy(component[key], component)()
+              const v = bindWithProxy(component, component[key])()
               component[pureKey] = Array.isArray(v) || key !== '$children' ? v : [v]
               processStack.pop()
             })
 
             keys.other.forEach((key) => {
               if (typeof component[key] === 'function') {
-                component[key] = bindWithProxy(component[key], component, handler(component))
+                component[key] = bindWithProxy(component, component[key])
               }
 
               domModificator(object, [...actions, key], component[key], { valueParent: component })
@@ -446,7 +446,7 @@ const Gruu = ((function () {
 
     Object.keys(component).forEach((key) => {
       if (typeof component[key] === 'function') {
-        component[key] = bindWithProxy(component[key], component)
+        component[key] = bindWithProxy(component, component[key])
       }
     })
 
@@ -454,7 +454,7 @@ const Gruu = ((function () {
       if (key.startsWith('$')) {
         const pureKey = key.slice(1)
         processStack.push({ component, key })
-        const value = bindWithProxy(component[key], component)()
+        const value = bindWithProxy(component, component[key])()
         component[pureKey] = Array.isArray(value) || key !== '$children' ? value : [value]
         processStack.pop()
       }

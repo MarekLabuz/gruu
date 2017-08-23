@@ -134,6 +134,42 @@ describe('new component while assigning', () => {
     expect(newDivOuter._parent).toBe(app.noProxy)
     expect(app.children[0].noProxy).toBe(newDivOuter.noProxy)
   })
+
+  const init4 = () => {
+    document.body.innerHTML = '<div id="root"></div>'
+
+    const app = createComponent({
+      _type: 'div',
+      children: {
+        _type: 'div',
+        $children: () => 'test'
+      }
+    })
+
+    const container = document.querySelector('#root')
+    renderApp(container, [app])
+
+    return { app }
+  }
+
+  test('renders correctly #4', () => {
+    const { app } = init4()
+    expect(document.body.innerHTML).toBe('<div id="root"><div><div>test</div></div></div>')
+    expect(typeof app.children[0].$children).toBe('function')
+  })
+
+  test('removes not existing dynamic properties', () => {
+    const { app } = init4()
+
+    app.children = [{
+      _type: 'div',
+      textContent: 'test #2'
+    }]
+
+    expect(document.body.innerHTML).toBe('<div id="root"><div><div>test #2</div></div></div>')
+    expect(app.children[0].$children).toBe(undefined)
+    expect(app.children[0].textContent).toBe('test #2')
+  })
 })
 
 describe('text as a component', () => {
