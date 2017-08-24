@@ -65,45 +65,13 @@ const Gruu = ((function () {
     }
   }
 
-  const handleComponentRender = (value, target, preTarget, modifyTree, action, valueParent, object) => {
+  const handleComponentRender = (value, target, preTarget, modifyTree, action, valueParent) => {
     let component = value.noProxy || value
     component = recursivelyCreateAndRenderComponent({ component, parent: preTarget })
 
-    const nodeParent = findClosestNodeParent(preTarget)
-
-    const parentNodeArray = componentToNodeArray(nodeParent, true)
-    const componentNodeArray = componentToNodeArray(component)
-
-    let index
     if (target) {
       target._unmount()
-      const targetNodeArray = componentToNodeArray(target)
-      const lastTargetNode = targetNodeArray.slice(-1)[0]
-      index = parentNodeArray.findIndex(({ id }) => id === lastTargetNode.id)
-    } else {
-      index = parentNodeArray.findIndex(({ id }) => id === object._id)
     }
-
-    if (index !== -1) {
-      index += 1
-      for (let i = index; i < parentNodeArray.length; i += 1) {
-        if (parentNodeArray[i] && parentNodeArray[i].node &&
-          parentNodeArray[i].node.parentNode === nodeParent._node) {
-          index = i
-          break
-        }
-      }
-    }
-
-    componentNodeArray.forEach(({ node }) => {
-      if (node) {
-        if (!parentNodeArray[index] || !parentNodeArray[index].node || parentNodeArray[index].node.parentNode) {
-          nodeParent._node.insertBefore(node, parentNodeArray[index] && parentNodeArray[index].node)
-        } else {
-          nodeParent._node.appendChild(node)
-        }
-      }
-    })
 
     if (modifyTree) {
       preTarget.children[action] = component
@@ -112,6 +80,21 @@ const Gruu = ((function () {
       }
     } else if (valueParent) {
       valueParent.children[action] = component
+    }
+
+    const nodeParent = findClosestNodeParent(preTarget)
+    const parentNodeArray = componentToNodeArray(nodeParent, true)
+    const componentNodeArray = componentToNodeArray(component)
+
+    const lastItem = componentNodeArray.slice(-1)[0]
+    if (lastItem) {
+      const index = parentNodeArray.findIndex(({ id }) => id === lastItem.id)
+      const item = index !== -1 ? parentNodeArray.slice(index + 1).find(v => v && v.node && v.node.parentNode) : null
+      componentNodeArray.forEach(({ node }) => {
+        if (node) {
+          nodeParent._node.insertBefore(node, item && item.node)
+        }
+      })
     }
   }
 
@@ -213,7 +196,7 @@ const Gruu = ((function () {
             }
           }
         } else if (!exists(target) && exists(value)) {
-          handleComponentRender(value, target, preTarget, modifyTree, action, valueParent, object)
+          handleComponentRender(value, target, preTarget, modifyTree, action, valueParent)
         }
       }
     }
@@ -572,26 +555,8 @@ const Gruu = ((function () {
     recursivelyCreateAndRenderComponent({ component, parent, nodeParent: parent })
   }
 
-  const browserHistory = createComponent({
-    state: {
-      locationPath: window.location.pathname,
-      goTo (path) {
-        browserHistory.state.locationPath = path
-        window.history.pushState(null, null, path)
-      }
-    }
-  })
-
-  const isPathCorrect = (path, locationPath) => path === locationPath
-
-  const route = (path, component) => createComponent({
-    $children () {
-      return [isPathCorrect(path, browserHistory.state.locationPath) && component]
-    }
-  })
-
   return Object.assign(
-    { createComponent, renderApp, browserHistory, route },
+    { createComponent, renderApp },
     window.__DEV__ ? { destinations: { DEFAULT, STATE, CHILDREN, NODE }, findDestination } : {}
   )
 })())

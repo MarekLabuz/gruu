@@ -18,6 +18,7 @@
     "view",
     "js"
   ],
+  "homepage": "https://gruujs.com",
   "license": "MIT",
   "devDependencies": {
     "babel-eslint": "^7.2.3",
