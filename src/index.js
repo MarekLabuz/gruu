@@ -247,7 +247,7 @@ const Gruu = ((function () {
           target[lastAction] = value
         }
         if (target._node) {
-          target._node[lastAction] = value || ''
+          target._node[lastAction] = exists(value) ? value : ''
         }
       }
     }
