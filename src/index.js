@@ -20,7 +20,7 @@ const Gruu = ((function () {
 
   const get = (object, actions) => actions.reduce((acc, key) => acc[key], object)
 
-  const findClosestNodeParent = object => (object._node ? object : findClosestNodeParent(object._parent))
+  const findClosestNodeParent = object => (object._n ? object : findClosestNodeParent(object._parent))
 
   const bindWithProxy = (component, fn = () => null) => (
     component.noProxy
@@ -67,7 +67,7 @@ const Gruu = ((function () {
 
   const handleComponentRender = (value, target, preTarget, modifyTree, action, valueParent) => {
     let component = value.noProxy || value
-    component = recursivelyCreateAndRenderComponent({ component, parent: preTarget })
+    component = recursivelyCreateAndRenderComponent(component, preTarget)
 
     if (target) {
       target._unmount()
@@ -92,7 +92,7 @@ const Gruu = ((function () {
       const item = index !== -1 ? parentNodeArray.slice(index + 1).find(v => v && v.node && v.node.parentNode) : null
       componentNodeArray.forEach(({ node }) => {
         if (node) {
-          nodeParent._node.insertBefore(node, item && item.node)
+          nodeParent._n.insertBefore(node, item && item.node)
         }
       })
     }
@@ -210,7 +210,7 @@ const Gruu = ((function () {
       if (action === undefined) {
         const target = get(object, actions.slice(0, lastIndexChildren))
         if (!exists(value)) {
-          target._node.removeAttribute('style')
+          target._n.removeAttribute('style')
           if (modifyTree) {
             target.style = value
           }
@@ -221,7 +221,7 @@ const Gruu = ((function () {
           }
           Object.keys(newStyle).forEach((key) => {
             if (target.style[key] !== value[key]) {
-              target._node.style[key] = value[key] || ''
+              target._n.style[key] = value[key] || ''
               if (modifyTree) {
                 target.style[key] = value[key]
               }
@@ -230,7 +230,7 @@ const Gruu = ((function () {
         }
       } else {
         const target = get(object, actions.slice(0, -2))
-        target._node.style[action] = value
+        target._n.style[action] = value
         if (modifyTree) {
           if (!target.style) {
             target.style = {}
@@ -246,8 +246,8 @@ const Gruu = ((function () {
         if (modifyTree) {
           target[lastAction] = value
         }
-        if (target._node) {
-          target._node[lastAction] = exists(value) ? value : ''
+        if (target._n) {
+          target._n[lastAction] = exists(value) ? value : ''
         }
       }
     }
@@ -450,10 +450,10 @@ const Gruu = ((function () {
     component._unmount = function () {
       clearListeners(this)
       if (this._r) {
-        if (this._node) {
+        if (this._n) {
           const nodeParent = findClosestNodeParent(this._parent)
-          if (this._node.parentNode) {
-            nodeParent._node.removeChild(this._node)
+          if (this._n.parentNode) {
+            nodeParent._n.removeChild(this._n)
           }
         } else if (this.children) {
           this.children.forEach((child) => {
@@ -468,7 +468,7 @@ const Gruu = ((function () {
     return component
   }
 
-  const recursivelyCreateAndRenderComponent = ({ component: obj, parent, nodeParent }) => {
+  const recursivelyCreateAndRenderComponent = (obj, parent, nodeParent) => {
     const object = (!exists(obj) || typeof obj === 'object') ? obj : { _type: 'text', textContent: obj }
 
     if (!exists(object)) {
@@ -482,17 +482,13 @@ const Gruu = ((function () {
     }
 
     const component = internallyCreateComponent(object)
-    internallyRenderComponent({ component, parent, nodeParent })
+    internallyRenderComponent(component, parent, nodeParent)
     if (exists(component.children) && !component._r) {
       if (!Array.isArray(component.children)) {
         component.children = [component.children]
       }
       component.children = component.children.map(child => (
-        recursivelyCreateAndRenderComponent({
-          component: child,
-          parent: component,
-          nodeParent: component._node ? component : nodeParent
-        })
+        recursivelyCreateAndRenderComponent(child, component, component._n ? component : nodeParent)
       ))
     }
 
@@ -512,22 +508,22 @@ const Gruu = ((function () {
     return new Proxy(object, handler(object))
   }
 
-  const internallyRenderComponent = ({ component, parent, nodeParent }) => {
+  const internallyRenderComponent = (component, parent, nodeParent) => {
     const pureComponent = component && (component.noProxy || component)
 
     if (pureComponent) {
       if (pureComponent._type) {
-        pureComponent._node = pureComponent._node || (
-            pureComponent._type === 'text'
-              ? document.createTextNode(pureComponent.textContent)
-              : createElement(pureComponent)
-          )
+        pureComponent._n = pureComponent._n || (
+          pureComponent._type === 'text'
+            ? document.createTextNode(pureComponent.textContent)
+            : createElement(pureComponent)
+        )
       }
 
       pureComponent._parent = parent.noProxy || parent
 
-      if (nodeParent && pureComponent._node) {
-        nodeParent._node.appendChild(pureComponent._node)
+      if (nodeParent && pureComponent._n) {
+        nodeParent._n.appendChild(pureComponent._n)
       }
     }
   }
@@ -536,8 +532,8 @@ const Gruu = ((function () {
     const pureComponent = component && (component.noProxy || component)
 
     if (exists(pureComponent)) {
-      if (pureComponent._node && !next) {
-        return [{ id: pureComponent._id, node: pureComponent._node }]
+      if (pureComponent._n && !next) {
+        return [{ id: pureComponent._id, node: pureComponent._n }]
       }
 
       if (pureComponent.children) {
@@ -551,8 +547,8 @@ const Gruu = ((function () {
 
   const renderApp = (root, children) => {
     const component = createComponent({ children }).noProxy
-    const parent = { _node: root, children: [component] }
-    recursivelyCreateAndRenderComponent({ component, parent, nodeParent: parent })
+    const parent = { _n: root, children: [component] }
+    recursivelyCreateAndRenderComponent(component, parent, parent)
   }
 
   return Object.assign(
