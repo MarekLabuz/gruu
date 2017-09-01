@@ -12,7 +12,7 @@ Gruu is a small and powerful JavaScript library for creating dynamic content. Us
 ### Browser compatibility table
 
 | Chrome | Firefox | Edge | Opera | Safari |
-|---|---|---|---|---|---|
+|---|---|---|---|---|
 | 49.0 | 18 | 12 (10240) | 36 | 10 |
 
 ## Licence
