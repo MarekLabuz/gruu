@@ -18,7 +18,7 @@ describe('findDestination', () => {
 
 describe('createComponent', () => {
   test('returns Proxy', () => {
-    expect(Object.keys(createComponent({}))).toEqual(['_id'])
+    expect(Object.keys(createComponent({}))).toEqual([])
     expect(typeof createComponent({})).toEqual('object')
     expect(createComponent()).toBe(undefined)
     expect(createComponent(null)).toBe(null)
@@ -27,16 +27,16 @@ describe('createComponent', () => {
   test('converts text to Text HTML Element', () => {
     const component = createComponent('test')
     expect(typeof component).toEqual('object')
-    expect(Object.keys(component)).toEqual(['_type', 'textContent', '_id'])
+    expect(Object.keys(component)).toEqual(['_type', 'textContent'])
     expect(component.textContent).toEqual('test')
-    expect(Object.keys(createComponent(''))).toEqual(['_type', 'textContent', '_id'])
+    expect(Object.keys(createComponent(''))).toEqual(['_type', 'textContent'])
   })
 
   test('converts numbers to Text HTML Element', () => {
     const component = createComponent(7868)
     expect(typeof component).toEqual('object')
-    expect(Object.keys(component)).toEqual(['_type', 'textContent', '_id'])
+    expect(Object.keys(component)).toEqual(['_type', 'textContent'])
     expect(component.textContent).toEqual(7868)
-    expect(Object.keys(createComponent(0))).toEqual(['_type', 'textContent', '_id'])
+    expect(Object.keys(createComponent(0))).toEqual(['_type', 'textContent'])
   })
 })

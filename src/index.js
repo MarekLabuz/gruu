@@ -1,5 +1,5 @@
 const Gruu = ((function () {
-  const exists = value => value || value === '' || value === 0
+  const exists = value => value != null && value !== false
 
   const char = () => Math.floor(31 * Math.random()).toString(32)
   const chunk = num => Array(num).fill(0).map(() => char()).join('')
@@ -30,6 +30,7 @@ const Gruu = ((function () {
 
   const clearListeners = (component, paramsTuRemove) => {
     if (component._r && component._w) {
+      component._id = component._id || uuid()
       Object.keys(component._w).forEach((w) => {
         if (paramsTuRemove) {
           const set = component._w[w]._l[component._id].keys
@@ -125,7 +126,7 @@ const Gruu = ((function () {
         const newChild = val[i]
 
         if (!currentChild || !newChild || !currentChild._key || !newChild._key || currentChild._key === newChild._key) {
-          domModificator(object, [...actions, `${i}`], newChild, { valueParent, modifyTree })
+          domModificator(preTarget, ['children', `${i}`], newChild, { valueParent, modifyTree })
           i += 1
         } else {
           currentChild._unmount()
@@ -187,7 +188,7 @@ const Gruu = ((function () {
                 component[key] = bindWithProxy(component, component[key])
               }
 
-              domModificator(object, [...actions, key], component[key], { valueParent: component })
+              domModificator(target, [key], component[key], { valueParent: component })
             })
 
             if (modifyTree) {
@@ -330,6 +331,8 @@ const Gruu = ((function () {
 
         const newKey = [...k, key].join('.')
 
+        stackElement._id = stackElement._id || uuid()
+
         if (!object._l[stackElement._id]) {
           object._l[stackElement._id] = {
             keys: new Set()
@@ -341,6 +344,8 @@ const Gruu = ((function () {
         if (!stackElement._w) {
           stackElement._w = {}
         }
+
+        object._id = object._id || uuid()
         stackElement._w[object._id] = object
       }
 
@@ -425,7 +430,6 @@ const Gruu = ((function () {
     if (component._r) {
       return component
     }
-    component._id = component._id || uuid()
 
     Object.keys(component).forEach((key) => {
       if (typeof component[key] === 'function') {
@@ -504,7 +508,6 @@ const Gruu = ((function () {
       return object
     }
 
-    object._id = object._id || uuid()
     return new Proxy(object, handler(object))
   }
 
@@ -532,6 +535,7 @@ const Gruu = ((function () {
     const pureComponent = component && (component.noProxy || component)
 
     if (exists(pureComponent)) {
+      pureComponent._id = pureComponent._id || uuid()
       if (pureComponent._n && !next) {
         return [{ id: pureComponent._id, node: pureComponent._n }]
       }
