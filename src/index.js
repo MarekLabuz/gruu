@@ -2,7 +2,12 @@ const Gruu = ((function () {
   const exists = value => value != null && value !== false
 
   const char = () => Math.floor(31 * Math.random()).toString(32)
-  const chunk = num => Array(num).fill(0).map(() => char()).join('')
+  const chunks = {
+    8: Array(8).fill(0),
+    4: Array(4).fill(0),
+    12: Array(12).fill(0)
+  }
+  const chunk = num => chunks[num].reduce(acc => acc + char())
 
   const uuid = () => `${chunk(8)}-${chunk(4)}-${chunk(4)}-${chunk(4)}-${chunk(12)}`
 
@@ -83,19 +88,27 @@ const Gruu = ((function () {
       valueParent.children[action] = component
     }
 
-    const nodeParent = findClosestNodeParent(preTarget)
-    const parentNodeArray = componentToNodeArray(nodeParent, true)
     const componentNodeArray = componentToNodeArray(component)
+    const nodeParent = findClosestNodeParent(preTarget)
 
-    const lastItem = componentNodeArray.slice(-1)[0]
-    if (lastItem) {
-      const index = parentNodeArray.findIndex(({ id }) => id === lastItem.id)
-      const item = index !== -1 ? parentNodeArray.slice(index + 1).find(v => v && v.node && v.node.parentNode) : null
+    if (parseInt(action, 10) >= preTarget.children.length - 1) {
       componentNodeArray.forEach(({ node }) => {
         if (node) {
-          nodeParent._n.insertBefore(node, item && item.node)
+          nodeParent._n.appendChild(node)
         }
       })
+    } else {
+      const parentNodeArray = componentToNodeArray(nodeParent, true)
+      const lastItem = componentNodeArray.slice(-1)[0]
+      if (lastItem) {
+        const index = parentNodeArray.findIndex(({ id }) => id === lastItem.id)
+        const item = index !== -1 ? parentNodeArray.slice(index + 1).find(v => v && v.node && v.node.parentNode) : null
+        componentNodeArray.forEach(({ node }) => {
+          if (node) {
+            nodeParent._n.insertBefore(node, item && item.node)
+          }
+        })
+      }
     }
   }
 
@@ -125,7 +138,9 @@ const Gruu = ((function () {
         const currentChild = preTarget.children[i]
         const newChild = val[i]
 
-        if (!currentChild || !newChild || !currentChild._key || !newChild._key || currentChild._key === newChild._key) {
+        if (valueArray.length >= preTarget.children.length ||
+          (!currentChild || !newChild || !currentChild._key || !newChild._key || currentChild._key === newChild._key)
+        ) {
           domModificator(preTarget, ['children', `${i}`], newChild, { valueParent, modifyTree })
           i += 1
         } else {
@@ -137,14 +152,21 @@ const Gruu = ((function () {
         }
       }
     } else if (!isNaN(parseInt(action, 10))) {
-      if (target !== (value && (value.noProxy || value))) {
+      if (target !== (value && (value.noProxy || value)) &&
+        (!target || !value || (!target._createdBy && !value._createdBy) ||
+        target._createdBy !== (value.noProxy || value)._createdBy)
+      ) {
         const preTarget = get(object, actions.slice(0, -2))
-
         if (exists(target) && !exists(value)) {
           target._unmount()
           if (modifyTree) {
             preTarget.children[action] = value
             target._parent.children[action] = value
+            let i = target._parent.children.length - 1
+            while (i > 0 && !target._parent.children[i]) {
+              target._parent.children.splice(i, 1)
+              i -= 1
+            }
           }
         } else if (exists(target) && exists(value)) {
           clearListeners(target)
@@ -158,13 +180,11 @@ const Gruu = ((function () {
               other: new Set()
             }
 
-            const componentKeys = Object.keys(component)
-
-            Object.keys(target).concat(componentKeys).forEach((key) => {
+            Object.keys(Object.assign({}, target, component)).forEach((key) => {
               if (key.startsWith('$')) {
                 keys.$.add(key)
                 keys.other.add(key.slice(1))
-              } else if (key.startsWith('_')) {
+              } else if (key.startsWith('_') && key !== '_createdBy' && key !== '_key') {
                 component[key] = target[key]
               } else {
                 keys.other.add(key)
@@ -174,6 +194,9 @@ const Gruu = ((function () {
             if (valueParent) {
               component._parent = valueParent
             }
+
+            component._createdBy = value._createdBy
+            component._key = value._key
 
             keys.$.forEach((key) => {
               const pureKey = key.slice(1)
@@ -313,65 +336,67 @@ const Gruu = ((function () {
     }
   }
 
-  const handler = (object, ...k) => ({
-    get (target, key) {
-      if (key === 'noProxy') {
-        return target
-      }
+  const getHandler = (object, k) => (target, key) => {
+    if (key === 'noProxy') {
+      return target
+    }
 
-      if (typeof key === 'string' && key.startsWith('_')) {
-        return target[key]
-      }
-
-      const { component: stackElement, key: stackKey } = processStack.slice(-1)[0] || {}
-      if (stackElement) {
-        if (!object._l) {
-          (object.noProxy || object)._l = {}
-        }
-
-        const newKey = [...k, key].join('.')
-
-        stackElement._id = stackElement._id || uuid()
-
-        if (!object._l[stackElement._id]) {
-          object._l[stackElement._id] = {
-            keys: new Set()
-          }
-        }
-        object._l[stackElement._id].component = stackElement
-        object._l[stackElement._id].keys.add(`${newKey} -> ${stackKey}`)
-
-        if (!stackElement._w) {
-          stackElement._w = {}
-        }
-
-        object._id = object._id || uuid()
-        stackElement._w[object._id] = object
-      }
-
-      const isType = target[key] && (target[key]._type || target[key].children)
-      const component = isType ? target[key] : object
-
-      if (target[key] && typeof target[key] === 'object') {
-        return new Proxy(target[key].noProxy || target[key], handler(component, ...(isType ? [] : [...k, key])))
-      }
-
-      if (typeof target[key] === 'function') {
-        return target[key].bind(target)
-      }
-
+    if (typeof key === 'string' && key.startsWith('_')) {
       return target[key]
-    },
+    }
+
+    const { component: stackElement, key: stackKey } = processStack.slice(-1)[0] || {}
+    if (stackElement) {
+      const objectNoProxy = object.noProxy || object
+      const stackElementNoProxy = stackElement.noProxy || stackElement
+
+      if (!objectNoProxy._l) {
+        objectNoProxy._l = {}
+      }
+
+      const newKey = [...k, key].join('.')
+
+      stackElementNoProxy._id = stackElementNoProxy._id || uuid()
+
+      if (!objectNoProxy._l[stackElementNoProxy._id]) {
+        objectNoProxy._l[stackElementNoProxy._id] = {
+          keys: new Set()
+        }
+      }
+      objectNoProxy._l[stackElementNoProxy._id].component = stackElementNoProxy
+      objectNoProxy._l[stackElementNoProxy._id].keys.add(`${newKey} -> ${stackKey}`)
+
+      if (!stackElementNoProxy._w) {
+        stackElementNoProxy._w = {}
+      }
+
+      objectNoProxy._id = objectNoProxy._id || uuid()
+      stackElementNoProxy._w[objectNoProxy._id] = objectNoProxy
+    }
+
+    const isType = target[key] && (target[key]._type || target[key].children)
+    const component = isType ? target[key] : object
+
+    if (target[key] && typeof target[key] === 'object') {
+      return new Proxy(target[key].noProxy || target[key], handler(component, ...(isType ? [] : [...k, key])))
+    }
+
+    if (typeof target[key] === 'function') {
+      return target[key].bind(target)
+    }
+
+    return target[key]
+  }
+
+  const handler = (object, ...k) => ({
+    get: getHandler(object, k),
     set (target, key, value) {
       const actions = [...k, key]
       domModificator(object, actions, value, { modifyTree: true })
 
       object._actionsToUpdate = [...(object._actionsToUpdate || []), actions.join('.')]
 
-      if (object._rerender) {
-        clearTimeout(object._rerender)
-      }
-
+      clearTimeout(object._rerender)
       object._rerender = setTimeout(() => {
         const _actions = object._actionsToUpdate
         object._actionsToUpdate = []
@@ -384,7 +409,7 @@ const Gruu = ((function () {
                 ...acc.filter(p => p !== param),
                 ...(
                   param.startsWith('$') &&
-                    _actions.some(_action => keys.has(`${_action} -> ${param.split('.')[0]}`)) ? [param] : []
+                  _actions.some(_action => keys.has(`${_action} -> ${param.split('.')[0]}`)) ? [param] : []
                 )
               ], [])
 
@@ -517,10 +542,10 @@ const Gruu = ((function () {
     if (pureComponent) {
       if (pureComponent._type) {
         pureComponent._n = pureComponent._n || (
-          pureComponent._type === 'text'
-            ? document.createTextNode(pureComponent.textContent)
-            : createElement(pureComponent)
-        )
+            pureComponent._type === 'text'
+              ? document.createTextNode(pureComponent.textContent)
+              : createElement(pureComponent)
+          )
       }
 
       pureComponent._parent = parent.noProxy || parent
