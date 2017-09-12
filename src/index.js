@@ -1,22 +1,18 @@
 const Gruu = ((function () {
   const exists = value => value != null && value !== false
-
-  const char = () => Math.floor(31 * Math.random()).toString(32)
-  const chunks = {
-    8: Array(8).fill(0),
-    4: Array(4).fill(0),
-    12: Array(12).fill(0)
+  let lastId = 1
+  const genId = () => {
+    lastId += 1
+    return lastId
   }
-  const chunk = num => chunks[num].reduce(acc => acc + char())
-
-  const uuid = () => `${chunk(8)}-${chunk(4)}-${chunk(4)}-${chunk(4)}-${chunk(12)}`
+  const last = v => v[v.length - 1]
 
   const stateModificationHandler = (object, actions, value, modifyTree) => {
     if (modifyTree) {
       if (actions.length === 0) {
         object.state = value
       } else {
-        const lastAction = actions.slice(-1)[0]
+        const lastAction = last(actions)
         const v = actions.slice(0, -1).reduce((acc, key) => acc[key], object)
         v[lastAction] = value
       }
@@ -28,14 +24,12 @@ const Gruu = ((function () {
   const findClosestNodeParent = object => (object._n ? object : findClosestNodeParent(object._parent))
 
   const bindWithProxy = (component, fn = () => null) => (
-    component.noProxy
-      ? component
-      : fn.bind(new Proxy(component, handler(component)))
+    component.noProxy ? component : fn.bind(new Proxy(component, handler(component)))
   )
 
   const clearListeners = (component, paramsTuRemove) => {
     if (component._r && component._w) {
-      component._id = component._id || uuid()
+      component._id = component._id || genId()
       Object.keys(component._w).forEach((w) => {
         if (paramsTuRemove) {
           const set = component._w[w]._l[component._id].keys
@@ -71,6 +65,17 @@ const Gruu = ((function () {
     }
   }
 
+  const overrideDynamicProperty = (component, key) => {
+    if (key.startsWith('$')) {
+      const pureKey = key.slice(1)
+      processStack.push({ component, key })
+      const result = bindWithProxy(component, component[key])()
+      const v = Array.isArray(result) || key !== '$children' ? result : [result]
+      component[pureKey] = pureKey === 'children' ? v.map(parseTextComponent) : v
+      processStack.pop()
+    }
+  }
+
   const handleComponentRender = (value, target, preTarget, modifyTree, action, valueParent) => {
     let component = value.noProxy || value
     component = recursivelyCreateAndRenderComponent(component, preTarget)
@@ -99,7 +104,7 @@ const Gruu = ((function () {
       })
     } else {
       const parentNodeArray = componentToNodeArray(nodeParent, true)
-      const lastItem = componentNodeArray.slice(-1)[0]
+      const lastItem = last(componentNodeArray)
       if (lastItem) {
         const index = parentNodeArray.findIndex(({ id }) => id === lastItem.id)
         const item = index !== -1 ? parentNodeArray.slice(index + 1).find(v => v && v.node && v.node.parentNode) : null
@@ -110,6 +115,20 @@ const Gruu = ((function () {
         })
       }
     }
+  }
+
+  const everyEqual = (a, b) => {
+    for (let i = 0; i < a.length; i += 1) {
+      if (a[i] !== b[i]) {
+        return false
+      }
+    }
+    return true
+  }
+
+  const parseTextComponent = (v) => {
+    const vNoProxy = (v && v.noProxy) || v
+    return (!exists(vNoProxy) || typeof vNoProxy === 'object' ? vNoProxy : { _type: 'text', textContent: vNoProxy })
   }
 
   const childrenModificationHandler = (object, actions, value, valueParent, modifyTree) => {
@@ -126,7 +145,7 @@ const Gruu = ((function () {
         preTarget.children = []
       }
 
-      const valueArray = Array.isArray(value) ? value : [value]
+      const valueArray = (Array.isArray(value) ? value : [value]).map(parseTextComponent)
       if (valueParent) {
         valueParent.children = valueArray
       }
@@ -141,7 +160,7 @@ const Gruu = ((function () {
         if (valueArray.length >= preTarget.children.length ||
           (!currentChild || !newChild || !currentChild._key || !newChild._key || currentChild._key === newChild._key)
         ) {
-          domModificator(preTarget, ['children', `${i}`], newChild, { valueParent, modifyTree })
+          domModificator(preTarget, ['children', `${i}`], newChild, { valueParent, modifyTree, dest: CHILDREN })
           i += 1
         } else {
           currentChild._unmount()
@@ -152,9 +171,10 @@ const Gruu = ((function () {
         }
       }
     } else if (!isNaN(parseInt(action, 10))) {
-      if (target !== (value && (value.noProxy || value)) &&
-        (!target || !value || (!target._createdBy && !value._createdBy) ||
-        target._createdBy !== (value.noProxy || value)._createdBy)
+      const valueNoProxy = (value && value.noProxy) || value
+      if (
+        target !== valueNoProxy && (!target || !valueNoProxy || (!target._createdBy && !valueNoProxy._createdBy) ||
+        !everyEqual(target._createdBy, valueNoProxy._createdBy))
       ) {
         const preTarget = get(object, actions.slice(0, -2))
         if (exists(target) && !exists(value)) {
@@ -170,24 +190,30 @@ const Gruu = ((function () {
           }
         } else if (exists(target) && exists(value)) {
           clearListeners(target)
-          if ((target._type || value._type) && (!target._type || !value._type || target._type !== value._type)) {
+          if ((target._type || value._type) && (!target._type || !value._type || target._type !== value._type) &&
+            (target._type !== 'text' || typeof value === 'object')) {
             handleComponentRender(value, target, preTarget, modifyTree, action, valueParent)
           } else {
-            const component = value.noProxy || value
-            const keys = {
-              $: new Set(),
-              _: new Set(),
-              other: new Set()
+            const val = parseTextComponent(valueNoProxy)
+            const component = val
+            if (component.children && Array.isArray(component.children)) {
+              component.children = component.children.map(child => (child && child.noProxy) || child)
             }
 
+            const keys = { $: [], other: [] }
+
             Object.keys(Object.assign({}, target, component)).forEach((key) => {
-              if (key.startsWith('$')) {
-                keys.$.add(key)
-                keys.other.add(key.slice(1))
-              } else if (key.startsWith('_') && key !== '_createdBy' && key !== '_key') {
-                component[key] = target[key]
-              } else {
-                keys.other.add(key)
+              if (target[key] !== component[key]) {
+                if (key.startsWith('$')) {
+                  keys.$.push(key)
+                  keys.other.push(key.slice(1))
+                } else if (key.startsWith('_')) {
+                  if (key !== '_createdBy' && key !== '_key') {
+                    component[key] = target[key]
+                  }
+                } else {
+                  keys.other.push(key)
+                }
               }
             })
 
@@ -195,22 +221,14 @@ const Gruu = ((function () {
               component._parent = valueParent
             }
 
-            component._createdBy = value._createdBy
-            component._key = value._key
-
             keys.$.forEach((key) => {
-              const pureKey = key.slice(1)
-              processStack.push({ component, key })
-              const v = bindWithProxy(component, component[key])()
-              component[pureKey] = Array.isArray(v) || key !== '$children' ? v : [v]
-              processStack.pop()
+              overrideDynamicProperty(component, key)
             })
 
             keys.other.forEach((key) => {
               if (typeof component[key] === 'function') {
                 component[key] = bindWithProxy(component, component[key])
               }
-
               domModificator(target, [key], component[key], { valueParent: component })
             })
 
@@ -264,7 +282,7 @@ const Gruu = ((function () {
       }
     } else {
       const target = get(object, actions.slice(0, -1))
-      const lastAction = actions.slice(-1)[0]
+      const lastAction = last(actions)
 
       if (target[lastAction] !== value) {
         if (modifyTree) {
@@ -307,14 +325,14 @@ const Gruu = ((function () {
 
   const defaultModificationHandler = (object, actions, value, modifyTree) => {
     const target = get(object, actions.slice(0, -1))
-    const action = actions.slice(-1)[0]
+    const action = last(actions)
     if (modifyTree) {
       target[action] = value
     }
   }
 
-  const domModificator = (obj, actions, value, { valueParent, modifyTree }) => {
-    const destination = findDestination(actions)
+  const domModificator = (obj, actions, value, { valueParent, modifyTree, dest }) => {
+    const destination = dest || findDestination(actions)
 
     const object = obj.noProxy || obj
 
@@ -345,7 +363,7 @@ const Gruu = ((function () {
       return target[key]
     }
 
-    const { component: stackElement, key: stackKey } = processStack.slice(-1)[0] || {}
+    const { component: stackElement, key: stackKey } = last(processStack) || {}
     if (stackElement) {
       const objectNoProxy = object.noProxy || object
       const stackElementNoProxy = stackElement.noProxy || stackElement
@@ -356,7 +374,7 @@ const Gruu = ((function () {
 
       const newKey = [...k, key].join('.')
 
-      stackElementNoProxy._id = stackElementNoProxy._id || uuid()
+      stackElementNoProxy._id = stackElementNoProxy._id || genId()
 
       if (!objectNoProxy._l[stackElementNoProxy._id]) {
         objectNoProxy._l[stackElementNoProxy._id] = {
@@ -370,7 +388,7 @@ const Gruu = ((function () {
         stackElementNoProxy._w = {}
       }
 
-      objectNoProxy._id = objectNoProxy._id || uuid()
+      objectNoProxy._id = objectNoProxy._id || genId()
       stackElementNoProxy._w[objectNoProxy._id] = objectNoProxy
     }
 
@@ -463,13 +481,7 @@ const Gruu = ((function () {
     })
 
     Object.keys(component).forEach((key) => {
-      if (key.startsWith('$')) {
-        const pureKey = key.slice(1)
-        processStack.push({ component, key })
-        const value = bindWithProxy(component, component[key])()
-        component[pureKey] = Array.isArray(value) || key !== '$children' ? value : [value]
-        processStack.pop()
-      }
+      overrideDynamicProperty(component, key)
     })
 
     if (component.children && Array.isArray(component.children)) {
@@ -498,7 +510,7 @@ const Gruu = ((function () {
   }
 
   const recursivelyCreateAndRenderComponent = (obj, parent, nodeParent) => {
-    const object = (!exists(obj) || typeof obj === 'object') ? obj : { _type: 'text', textContent: obj }
+    const object = parseTextComponent(obj)
 
     if (!exists(object)) {
       return object
@@ -527,7 +539,7 @@ const Gruu = ((function () {
   }
 
   const createComponent = (obj) => {
-    const object = (!exists(obj) || typeof obj === 'object') ? obj : { _type: 'text', textContent: obj }
+    const object = parseTextComponent(obj)
 
     if (!exists(object)) {
       return object
@@ -560,7 +572,7 @@ const Gruu = ((function () {
     const pureComponent = component && (component.noProxy || component)
 
     if (exists(pureComponent)) {
-      pureComponent._id = pureComponent._id || uuid()
+      pureComponent._id = pureComponent._id || genId()
       if (pureComponent._n && !next) {
         return [{ id: pureComponent._id, node: pureComponent._n }]
       }

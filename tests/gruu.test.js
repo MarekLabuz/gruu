@@ -1,4 +1,4 @@
-const { createComponent, renderApp } = require('../src/index')
+const Gruu = require('../src/index')
 
 const timer = () => new Promise(resolve => setTimeout(resolve))
 
@@ -6,7 +6,7 @@ describe('new component while assigning', () => {
   const init1 = () => {
     document.body.innerHTML = '<div id="root"></div>'
 
-    const main = createComponent({
+    const main = Gruu.createComponent({
       _type: 'div',
       children: [{
         _type: 'div',
@@ -18,7 +18,7 @@ describe('new component while assigning', () => {
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [main])
+    Gruu.renderApp(container, [main])
 
     return { main }
   }
@@ -39,7 +39,7 @@ describe('new component while assigning', () => {
   const init2 = () => {
     document.body.innerHTML = '<div id="root"></div>'
 
-    const app = createComponent({
+    const app = Gruu.createComponent({
       _type: 'div',
       children: [
         { _type: 'div', children: [{ _type: 'span', textContent: 'test #1' }, { _type: 'p', textContent: 'test #2' }] },
@@ -48,7 +48,7 @@ describe('new component while assigning', () => {
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [app])
+    Gruu.renderApp(container, [app])
 
     return { app }
   }
@@ -85,23 +85,23 @@ describe('new component while assigning', () => {
   const init3 = () => {
     document.body.innerHTML = '<div id="root"></div>'
 
-    const divInner = createComponent({
+    const divInner = Gruu.createComponent({
       _type: 'div',
       children: 'test'
     })
 
-    const divOuter = createComponent({
+    const divOuter = Gruu.createComponent({
       _type: 'div',
       children: [divInner]
     })
 
-    const app = createComponent({
+    const app = Gruu.createComponent({
       _type: 'div',
       children: [divOuter]
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [app])
+    Gruu.renderApp(container, [app])
 
     return { app, divOuter, divInner }
   }
@@ -117,11 +117,11 @@ describe('new component while assigning', () => {
 
   test('changes _parent  and children correctly', () => {
     const { app } = init3()
-    const newDivInner = createComponent({
+    const newDivInner = Gruu.createComponent({
       _type: 'div',
       children: 'test #2'
     })
-    const newDivOuter = createComponent({
+    const newDivOuter = Gruu.createComponent({
       _type: 'div',
       children: [newDivInner]
     })
@@ -138,7 +138,7 @@ describe('new component while assigning', () => {
   const init4 = () => {
     document.body.innerHTML = '<div id="root"></div>'
 
-    const app = createComponent({
+    const app = Gruu.createComponent({
       _type: 'div',
       children: {
         _type: 'div',
@@ -147,7 +147,7 @@ describe('new component while assigning', () => {
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [app])
+    Gruu.renderApp(container, [app])
 
     return { app }
   }
@@ -177,12 +177,12 @@ describe('text as a component', () => {
 
   beforeEach(() => {
     document.body.innerHTML = '<div id="root"></div>'
-    main = createComponent({
-      children: [createComponent('test')]
+    main = Gruu.createComponent({
+      children: [Gruu.createComponent('test')]
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [main])
+    Gruu.renderApp(container, [main])
   })
 
   test('renders correctly', () => {
@@ -208,7 +208,7 @@ describe('empty text as a component with subscription', () => {
   const init = () => {
     document.body.innerHTML = '<div id="root"></div>'
 
-    const store = createComponent({
+    const store = Gruu.createComponent({
       state: {
         data: [{
           action: 'test'
@@ -216,7 +216,7 @@ describe('empty text as a component with subscription', () => {
       }
     })
 
-    const app = createComponent({
+    const app = Gruu.createComponent({
       _type: 'div',
       $children: () => store.state.data.map(({ action }) => ({
         _type: 'div',
@@ -225,7 +225,7 @@ describe('empty text as a component with subscription', () => {
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [app])
+    Gruu.renderApp(container, [app])
 
     return { store }
   }
@@ -261,12 +261,12 @@ describe('empty text as a component with subscription', () => {
 describe('number as a component', () => {
   const init1 = () => {
     document.body.innerHTML = '<div id="root"></div>'
-    const main = createComponent({
-      children: [createComponent(5235)]
+    const main = Gruu.createComponent({
+      children: [Gruu.createComponent(5235)]
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [main])
+    Gruu.renderApp(container, [main])
 
     return { main }
   }
@@ -294,19 +294,19 @@ describe('number as a component', () => {
   const init2 = () => {
     document.body.innerHTML = '<div id="root"></div>'
 
-    const store = createComponent({
+    const store = Gruu.createComponent({
       state: {
         counter: 0
       }
     })
 
-    const main = createComponent({
+    const main = Gruu.createComponent({
       _type: 'div',
       $children: () => store.state.counter
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [main])
+    Gruu.renderApp(container, [main])
 
     return { main, store }
   }
@@ -340,12 +340,12 @@ describe('mixing numbers and texts as components', () => {
 
   beforeEach(() => {
     document.body.innerHTML = '<div id="root"></div>'
-    main = createComponent({
-      children: [createComponent(5235), createComponent('test')]
+    main = Gruu.createComponent({
+      children: [Gruu.createComponent(5235), Gruu.createComponent('test')]
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [main])
+    Gruu.renderApp(container, [main])
   })
 
   test('renders correctly', () => {
@@ -389,13 +389,13 @@ describe('simple component opperations', () => {
   beforeEach(() => {
     document.body.innerHTML = '<div id="root"></div>'
 
-    main = createComponent({
+    main = Gruu.createComponent({
       _type: 'div',
       className: 'main-class',
       children: [{ _type: 'text', textContent: 'test' }]
     })
 
-    divComponent = createComponent({
+    divComponent = Gruu.createComponent({
       _type: 'div',
       className: 'div-class',
       style: {
@@ -406,7 +406,7 @@ describe('simple component opperations', () => {
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [main, divComponent])
+    Gruu.renderApp(container, [main, divComponent])
   })
 
   const html = (className, text, style = ' style="height: 100px; width: 100px;"') =>
@@ -462,7 +462,7 @@ describe('table', () => {
   beforeEach(() => {
     document.body.innerHTML = '<div id="root"></div>'
 
-    const tr = num => createComponent({
+    const tr = num => Gruu.createComponent({
       _type: 'tr',
       children: [
         { _type: 'td', children: [{ _type: 'text', textContent: num }] },
@@ -475,12 +475,12 @@ describe('table', () => {
 
     const trs = Array(50).fill(1).map((v, i) => tr(i))
 
-    const table = createComponent({
+    const table = Gruu.createComponent({
       _type: 'table',
       children: trs
     })
 
-    const button = createComponent({
+    const button = Gruu.createComponent({
       _type: 'button',
       id: 'update',
       onclick () {
@@ -496,7 +496,7 @@ describe('table', () => {
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [table, button])
+    Gruu.renderApp(container, [table, button])
   })
 
   test('renders correctly', () => {
@@ -530,7 +530,7 @@ describe('adding and removing components dynamically', () => {
   beforeEach(() => {
     document.body.innerHTML = '<div id="root"></div>'
 
-    ul = createComponent({
+    ul = Gruu.createComponent({
       _type: 'ul',
       children: [
         { _type: 'li', children: [{ _type: 'text', textContent: 2 }] },
@@ -540,7 +540,7 @@ describe('adding and removing components dynamically', () => {
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [ul])
+    Gruu.renderApp(container, [ul])
   })
 
   test('renderes correclty', () => {
@@ -553,7 +553,7 @@ describe('adding and removing components dynamically', () => {
   })
 
   test('adds new element (component)', () => {
-    ul.children = [...ul.children, createComponent({ _type: 'li', children: [{ _type: 'text', textContent: 5 }] })]
+    ul.children = [...ul.children, Gruu.createComponent({ _type: 'li', children: [{ _type: 'text', textContent: 5 }] })]
     expect(document.body.innerHTML).toBe('<div id="root"><ul><li>2</li><li>3</li><li>4</li><li>5</li></ul></div>')
   })
 
@@ -569,7 +569,7 @@ describe('phantom components', () => {
   beforeEach(() => {
     document.body.innerHTML = '<div id="root"></div>'
 
-    const div = createComponent({
+    const div = Gruu.createComponent({
       _type: 'div',
       children: [{
         children: [{
@@ -578,12 +578,12 @@ describe('phantom components', () => {
       }]
     })
 
-    main = createComponent({
+    main = Gruu.createComponent({
       children: [div]
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [main])
+    Gruu.renderApp(container, [main])
   })
 
   test('renders correctly', () => {
@@ -602,7 +602,7 @@ describe('dom components => phantom components', () => {
   beforeEach(() => {
     document.body.innerHTML = '<div id="root"></div>'
 
-    ul = createComponent({
+    ul = Gruu.createComponent({
       _type: 'ul',
       children: [
         { _type: 'li', children: [{ _type: 'text', textContent: 9 }] },
@@ -613,7 +613,7 @@ describe('dom components => phantom components', () => {
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [ul])
+    Gruu.renderApp(container, [ul])
   })
 
   test('renders correctly', () => {
@@ -657,7 +657,7 @@ describe('phantom components => dom components', () => {
   beforeEach(() => {
     document.body.innerHTML = '<div id="root"></div>'
 
-    ul = createComponent({
+    ul = Gruu.createComponent({
       _type: 'ul',
       children: [
         {
@@ -671,7 +671,7 @@ describe('phantom components => dom components', () => {
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [ul])
+    Gruu.renderApp(container, [ul])
   })
 
   test('renders correctly', () => {
@@ -706,7 +706,7 @@ describe('mixed phantom and dom components', () => {
   beforeEach(() => {
     document.body.innerHTML = '<div id="root"></div>'
 
-    ul = createComponent({
+    ul = Gruu.createComponent({
       _type: 'ul',
       children: [
         { _type: 'li', children: [{ _type: 'text', textContent: 1 }] },
@@ -721,7 +721,7 @@ describe('mixed phantom and dom components', () => {
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [ul])
+    Gruu.renderApp(container, [ul])
   })
 
   test('renders correctly', () => {
@@ -752,7 +752,7 @@ describe('components with different _types', () => {
   beforeEach(() => {
     document.body.innerHTML = '<div id="root"></div>'
 
-    main = createComponent({
+    main = Gruu.createComponent({
       _type: 'div',
       children: [
         { _type: 'div', textContent: 4 },
@@ -767,7 +767,7 @@ describe('components with different _types', () => {
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [main])
+    Gruu.renderApp(container, [main])
   })
 
   test('renders correctly', () => {
@@ -799,7 +799,7 @@ describe('subscription', () => {
   beforeEach(() => {
     document.body.innerHTML = '<div id="root"></div>'
 
-    button = createComponent({
+    button = Gruu.createComponent({
       state: {
         toggle: false
       },
@@ -810,14 +810,14 @@ describe('subscription', () => {
       }
     })
 
-    main = createComponent({
+    main = Gruu.createComponent({
       _type: 'div',
       className: 'main-class',
       $children: () => [{ _type: 'text', textContent: button.state.toggle ? 'ON' : 'OFF' }]
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [main, button])
+    Gruu.renderApp(container, [main, button])
   })
 
   test('components renders correctly', () => {
@@ -843,7 +843,7 @@ describe('phantom components + subscriptions', () => {
   beforeEach(() => {
     document.body.innerHTML = '<div id="root"></div>'
 
-    const button = createComponent({
+    const button = Gruu.createComponent({
       _type: 'button',
       id: 'button',
       state: {
@@ -857,7 +857,7 @@ describe('phantom components + subscriptions', () => {
       }
     })
 
-    main = createComponent({
+    main = Gruu.createComponent({
       $children () {
         return [{
           children: [{ _type: 'text', textContent: button.state.counter }]
@@ -866,7 +866,7 @@ describe('phantom components + subscriptions', () => {
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [main, button])
+    Gruu.renderApp(container, [main, button])
   })
 
   test('renders correctly', () => {
@@ -881,7 +881,7 @@ describe('phantom components + subscriptions', () => {
   }, 50)
 })
 
-describe('dynamic subcription change (property change)', () => {
+describe('dynamic subscription change (property change)', () => {
   let store
   let render
 
@@ -889,11 +889,11 @@ describe('dynamic subcription change (property change)', () => {
     render = jest.fn()
     document.body.innerHTML = '<div id="root"></div>'
 
-    store = createComponent({
+    store = Gruu.createComponent({
       state: {}
     })
 
-    const div = createComponent({
+    const div = Gruu.createComponent({
       _type: 'div',
       $children () {
         render()
@@ -907,7 +907,7 @@ describe('dynamic subcription change (property change)', () => {
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [div])
+    Gruu.renderApp(container, [div])
   })
 
   test('renders correctly', () => {
@@ -960,20 +960,20 @@ describe('dynamic subcription change (property change)', () => {
   }, 125)
 })
 
-describe('dynamic subcription change (children change)', () => {
+describe('dynamic subscription change (children change)', () => {
   const init1 = () => {
     const render = jest.fn()
     document.body.innerHTML = '<div id="root"></div>'
 
-    const store = createComponent({
+    const store = Gruu.createComponent({
       state: {}
     })
 
-    const store2 = createComponent({
+    const store2 = Gruu.createComponent({
       state: {}
     })
 
-    const main = createComponent({
+    const main = Gruu.createComponent({
       _type: 'div',
       children: [{
         _type: 'div',
@@ -990,7 +990,7 @@ describe('dynamic subcription change (children change)', () => {
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [main])
+    Gruu.renderApp(container, [main])
 
     return { store, store2, main, render }
   }
@@ -1075,7 +1075,7 @@ describe('dynamic subcription change (children change)', () => {
 
     document.body.innerHTML = '<div id="root"></div>'
 
-    const button = createComponent({
+    const button = Gruu.createComponent({
       _type: 'button',
       state: {
         toggle: true
@@ -1088,19 +1088,19 @@ describe('dynamic subcription change (children change)', () => {
       }
     })
 
-    const store1 = createComponent({
+    const store1 = Gruu.createComponent({
       state: {
         counter: 10
       }
     })
 
-    const store2 = createComponent({
+    const store2 = Gruu.createComponent({
       state: {
         counter: 0
       }
     })
 
-    const div1 = createComponent({
+    const div1 = Gruu.createComponent({
       _type: 'div',
       $textContent: () => {
         render1()
@@ -1108,7 +1108,7 @@ describe('dynamic subcription change (children change)', () => {
       }
     })
 
-    const div2 = createComponent({
+    const div2 = Gruu.createComponent({
       _type: 'div',
       $textContent: () => {
         render2()
@@ -1116,7 +1116,7 @@ describe('dynamic subcription change (children change)', () => {
       }
     })
 
-    const main = createComponent({
+    const main = Gruu.createComponent({
       _type: 'div',
       $children: () => [
         button.state.toggle ? div1 : div2
@@ -1124,7 +1124,7 @@ describe('dynamic subcription change (children change)', () => {
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [button, main])
+    Gruu.renderApp(container, [button, main])
 
     return { store1, store2, render1, render2, buttonElem: document.getElementsByTagName('button')[0] }
   }
@@ -1149,7 +1149,6 @@ describe('dynamic subcription change (children change)', () => {
 
     buttonElem.click()
     await timer()
-
 
     expect(document.body.innerHTML).toBe('<div id="root"><button>TOGGLE</button><div><div>12</div></div></div>')
     expect(render1.mock.calls.length).toBe(3)
@@ -1196,13 +1195,13 @@ describe('dynamic subcription change (children change)', () => {
     const render1 = jest.fn()
     document.body.innerHTML = '<div id="root"></div>'
 
-    const store = createComponent({
+    const store = Gruu.createComponent({
       state: {
         counter: 3
       }
     })
 
-    const ul = createComponent({
+    const ul = Gruu.createComponent({
       _type: 'ul',
       $children: () => {
         render1()
@@ -1210,13 +1209,13 @@ describe('dynamic subcription change (children change)', () => {
       }
     })
 
-    const main = createComponent({
+    const main = Gruu.createComponent({
       _type: 'div',
       children: [ul]
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [main])
+    Gruu.renderApp(container, [main])
 
     return { render1, main, ul, store }
   }
@@ -1231,13 +1230,13 @@ describe('dynamic subcription change (children change)', () => {
     const { render1, main, ul, store } = init3()
     const render2 = jest.fn()
 
-    const store2 = createComponent({
+    const store2 = Gruu.createComponent({
       state: {
         counter: 5
       }
     })
 
-    main.children[0] = createComponent({
+    main.children[0] = Gruu.createComponent({
       _type: 'ul',
       $children: () => {
         render2()
@@ -1281,13 +1280,13 @@ describe('children as a array or component', () => {
   const init1 = () => {
     document.body.innerHTML = '<div id="root"></div>'
 
-    const main = createComponent({
+    const main = Gruu.createComponent({
       _type: 'div',
       children: { _type: 'div', textContent: 'hello' }
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [main])
+    Gruu.renderApp(container, [main])
 
     return { main }
   }
@@ -1319,19 +1318,19 @@ describe('children as a array or component', () => {
   const init2 = () => {
     document.body.innerHTML = '<div id="root"></div>'
 
-    const store = createComponent({
+    const store = Gruu.createComponent({
       state: {
         counter: 0
       }
     })
 
-    const main = createComponent({
+    const main = Gruu.createComponent({
       _type: 'div',
       children: { _type: 'div', $textContent: () => store.state.counter }
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [main])
+    Gruu.renderApp(container, [main])
 
     return { main, store }
   }
@@ -1368,13 +1367,13 @@ describe('unusual situations', () => {
   test('rendering null component', () => {
     document.body.innerHTML = '<div id="root"></div>'
     let container = document.querySelector('#root')
-    renderApp(container, [null])
+    Gruu.renderApp(container, [null])
 
     expect(document.body.innerHTML).toBe('<div id="root"></div>')
 
     document.body.innerHTML = '<div id="root"></div>'
     container = document.querySelector('#root')
-    renderApp(container, [{
+    Gruu.renderApp(container, [{
       _type: 'div',
       children: [null, { _type: 'span', textContent: 'hey!' }, undefined, { _type: 'text', textContent: 'ho!' }]
     }])
@@ -1385,7 +1384,7 @@ describe('unusual situations', () => {
   test('directly rendering phantom component', () => {
     document.body.innerHTML = '<div id="root"></div>'
     const container = document.querySelector('#root')
-    renderApp(container, [{
+    Gruu.renderApp(container, [{
       children: [{
         children: [{
           children: [{
@@ -1418,13 +1417,13 @@ describe('component with many watchers', () => {
 
     document.body.innerHTML = '<div id="root"></div>'
 
-    const store = createComponent({
+    const store = Gruu.createComponent({
       state: {
         toggle: true,
         toggle2: true
       }
     })
-    const div = createComponent({
+    const div = Gruu.createComponent({
       _type: 'div',
       $style: () => {
         styleRender()
@@ -1435,7 +1434,7 @@ describe('component with many watchers', () => {
       $children: () => {
         childrenRender()
         return store.state.toggle2 && (
-            createComponent({
+            Gruu.createComponent({
               _type: 'div',
               children: 'test'
             })
@@ -1444,7 +1443,7 @@ describe('component with many watchers', () => {
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [div])
+    Gruu.renderApp(container, [div])
 
     return { store, childrenRender, styleRender }
   }
@@ -1486,14 +1485,14 @@ describe('component with many watchers', () => {
 
     document.body.innerHTML = '<div id="root"></div>'
 
-    const store = createComponent({
+    const store = Gruu.createComponent({
       state: {
         toggle: true,
         counter: 0
       }
     })
 
-    const div = createComponent({
+    const div = Gruu.createComponent({
       _type: 'div',
       $style: () => {
         styleRender()
@@ -1504,7 +1503,7 @@ describe('component with many watchers', () => {
       $children: () => {
         childrenRender()
         return (
-          createComponent({
+          Gruu.createComponent({
             _type: 'div',
             children: store.state.counter
           })
@@ -1513,7 +1512,7 @@ describe('component with many watchers', () => {
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [div])
+    Gruu.renderApp(container, [div])
 
     return { store, childrenRender, styleRender }
   }
@@ -1572,13 +1571,13 @@ describe('components with "this" context', () => {
       }
     }
 
-    const app = createComponent({
+    const app = Gruu.createComponent({
       _type: 'div',
       children: [button]
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [app])
+    Gruu.renderApp(container, [app])
 
     return { app, button, clickFn }
   }
@@ -1614,7 +1613,7 @@ describe('components with "this" context', () => {
     const clickFn = jest.fn()
     document.body.innerHTML = '<div id="root"></div>'
 
-    const div = createComponent({
+    const div = Gruu.createComponent({
       _type: 'div',
       state: {
         counter: 10
@@ -1625,13 +1624,13 @@ describe('components with "this" context', () => {
       }
     })
 
-    const app = createComponent({
+    const app = Gruu.createComponent({
       _type: 'div',
       children: [div]
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [app])
+    Gruu.renderApp(container, [app])
 
     return { app, div, clickFn }
   }
@@ -1654,7 +1653,7 @@ describe('components with "this" context', () => {
   test('transfers context correctly in dynamic property', async (done) => {
     const { app } = init2()
     const clickFn = jest.fn()
-    const newDiv = createComponent({
+    const newDiv = Gruu.createComponent({
       _type: 'div',
       state: {
         counter: 200

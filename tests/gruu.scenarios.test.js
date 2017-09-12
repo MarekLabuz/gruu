@@ -1,4 +1,4 @@
-const { createComponent, renderApp } = require('../src/index')
+const Gruu = require('../src/index')
 
 const timer = () => new Promise(resolve => setTimeout(resolve))
 
@@ -10,18 +10,18 @@ describe('store + counters + ul', () => {
   beforeEach(() => {
     document.body.innerHTML = '<div id="root"></div>'
 
-    store = createComponent({
+    store = Gruu.createComponent({
       state: {
         counter: 0
       }
     })
 
-    main = createComponent({
+    main = Gruu.createComponent({
       _type: 'div',
       $children: () => [{ _type: 'text', textContent: store.state.counter }]
     }, store)
 
-    ul = createComponent({
+    ul = Gruu.createComponent({
       _type: 'ul',
       $children: () => Array(store.state.counter + 1).fill(true).map((v, i) => ({
         _type: 'li',
@@ -29,7 +29,7 @@ describe('store + counters + ul', () => {
       }))
     }, store)
 
-    const button = (name, diff) => createComponent({
+    const button = (name, diff) => Gruu.createComponent({
       _type: 'button',
       children: [{ _type: 'text', textContent: name }],
       onclick () {
@@ -41,7 +41,7 @@ describe('store + counters + ul', () => {
     const minusButtton = button('-', -1)
 
     const container = document.querySelector('#root')
-    renderApp(container, [main, addButton, minusButtton, ul])
+    Gruu.renderApp(container, [main, addButton, minusButtton, ul])
   })
 
   test('renders correctly', () => {
@@ -105,19 +105,19 @@ describe('dynamically render component with subscription', () => {
   beforeEach(() => {
     document.body.innerHTML = '<div id="root"></div>'
 
-    store = createComponent({
+    store = Gruu.createComponent({
       state: {
         counter: 0
       }
     })
 
-    const div = counter => createComponent({
+    const div = counter => Gruu.createComponent({
       _type: 'div',
       $className: () => store.state.counter,
       $children: () => [{ _type: 'span', textContent: store.state.counter + counter }]
     })
 
-    const main = createComponent({
+    const main = Gruu.createComponent({
       _type: 'div',
       state: {
         counter: 0
@@ -127,7 +127,7 @@ describe('dynamically render component with subscription', () => {
       }
     })
 
-    const button1 = createComponent({
+    const button1 = Gruu.createComponent({
       _type: 'button',
       textContent: 'store',
       onclick () {
@@ -135,7 +135,7 @@ describe('dynamically render component with subscription', () => {
       }
     })
 
-    const button2 = createComponent({
+    const button2 = Gruu.createComponent({
       _type: 'button',
       textContent: 'main',
       onclick () {
@@ -144,7 +144,7 @@ describe('dynamically render component with subscription', () => {
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [main, button1, button2])
+    Gruu.renderApp(container, [main, button1, button2])
   })
 
   const html = (c1, c2) =>
@@ -196,14 +196,14 @@ describe('replacing nodes (dom components)', () => {
   beforeEach(() => {
     document.body.innerHTML = '<div id="root"></div>'
 
-    const store = createComponent({
+    const store = Gruu.createComponent({
       state: {
         data: [['john', 'smith', 34], ['michael', 'smith', 34]],
         columns: ['first name', 'last name', 'age', '']
       }
     })
 
-    const addJaneButton = createComponent({
+    const addJaneButton = Gruu.createComponent({
       _type: 'div',
       children: [{
         children: [{
@@ -223,7 +223,7 @@ describe('replacing nodes (dom components)', () => {
       }]
     })
 
-    const addJaneButton2 = createComponent({
+    const addJaneButton2 = Gruu.createComponent({
       _type: 'div',
       children: [{
         children: [{
@@ -241,13 +241,13 @@ describe('replacing nodes (dom components)', () => {
       }]
     })
 
-    const app = createComponent({
+    const app = Gruu.createComponent({
       _type: 'div',
       $children: () => [store.state.data.length % 2 === 0 ? addJaneButton2 : addJaneButton]
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [app])
+    Gruu.renderApp(container, [app])
   })
 
   const html = text => `<div id="root"><div><div><button>${text}</button></div></div></div>`
@@ -279,14 +279,14 @@ describe('replacing nodes (phantom components)', () => {
   beforeEach(() => {
     document.body.innerHTML = '<div id="root"></div>'
 
-    const store = createComponent({
+    const store = Gruu.createComponent({
       state: {
         data: [['john', 'smith', 34], ['michael', 'smith', 34]],
         columns: ['first name', 'last name', 'age', '']
       }
     })
 
-    const addJaneButton = createComponent({
+    const addJaneButton = Gruu.createComponent({
       children: [{
         children: [{
           children: [{
@@ -305,7 +305,7 @@ describe('replacing nodes (phantom components)', () => {
       }]
     })
 
-    const addJaneButton2 = createComponent({
+    const addJaneButton2 = Gruu.createComponent({
       children: [{
         children: [{
           children: [{
@@ -322,13 +322,13 @@ describe('replacing nodes (phantom components)', () => {
       }]
     })
 
-    const app = createComponent({
+    const app = Gruu.createComponent({
       _type: 'div',
       $children: () => [store.state.data.length % 2 === 0 ? addJaneButton2 : addJaneButton]
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [app])
+    Gruu.renderApp(container, [app])
   })
 
   const html = text => `<div id="root"><div><button>${text}</button></div></div>`
@@ -364,26 +364,26 @@ describe('excesive list generator', () => {
 
     document.body.innerHTML = '<div id="root"></div>'
 
-    const div = createComponent({
+    const div = Gruu.createComponent({
       _type: 'div',
       textContent: 'div'
     })
 
-    const store = createComponent({
+    const store = Gruu.createComponent({
       state: {
         counter: 0
       }
     })
 
-    const ul = createComponent({
+    const ul = Gruu.createComponent({
       _type: 'ul',
       $children: () => {
         render1()
-        return Array(store.state.counter).fill(true).map(() => createComponent({
+        return Array(store.state.counter).fill(true).map(() => Gruu.createComponent({
           _type: 'li',
           $children: () => {
             render2()
-            return Array(store.state.counter).fill(true).map(() => createComponent({
+            return Array(store.state.counter).fill(true).map(() => Gruu.createComponent({
               _type: 'div',
               $textContent: () => {
                 render3()
@@ -395,7 +395,7 @@ describe('excesive list generator', () => {
       }
     })
 
-    const button = createComponent({
+    const button = Gruu.createComponent({
       _type: 'button',
       state: {
         toggle: true
@@ -406,13 +406,13 @@ describe('excesive list generator', () => {
       }
     })
 
-    const main = createComponent({
+    const main = Gruu.createComponent({
       _type: 'div',
       $children: () => [button.state.toggle ? div : ul]
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [button, main])
+    Gruu.renderApp(container, [button, main])
 
     return { store, render1, render2, render3 }
   }
@@ -457,14 +457,14 @@ describe('excesive list generator', () => {
     expect(document.body.innerHTML).toBe(ulHTML(4))
     expect(render1.mock.calls.length).toBe(3)
     expect(render2.mock.calls.length).toBe(6)
-    expect(render3.mock.calls.length).toBe(22)
+    expect(render3.mock.calls.length).toBe(26)
 
     buttonElem.click()
     await timer()
     expect(document.body.innerHTML).toBe(divHTMl)
     expect(render1.mock.calls.length).toBe(3)
     expect(render2.mock.calls.length).toBe(6)
-    expect(render3.mock.calls.length).toBe(22)
+    expect(render3.mock.calls.length).toBe(26)
 
     store.state.counter += 1
     store.state.counter += 1
@@ -472,14 +472,14 @@ describe('excesive list generator', () => {
     expect(document.body.innerHTML).toBe(divHTMl)
     expect(render1.mock.calls.length).toBe(3)
     expect(render2.mock.calls.length).toBe(10)
-    expect(render3.mock.calls.length).toBe(62)
+    expect(render3.mock.calls.length).toBe(66)
 
     buttonElem.click()
     await timer()
     expect(document.body.innerHTML).toBe(ulHTML(6))
     expect(render1.mock.calls.length).toBe(4)
     expect(render2.mock.calls.length).toBe(16)
-    expect(render3.mock.calls.length).toBe(98)
+    expect(render3.mock.calls.length).toBe(126)
 
     buttonElem.click()
     await timer()
@@ -496,7 +496,7 @@ describe('excesive list generator', () => {
     expect(document.body.innerHTML).toBe(ulHTML(6))
     expect(render1.mock.calls.length).toBe(7)
     expect(render2.mock.calls.length).toBe(34)
-    expect(render3.mock.calls.length).toBe(206)
+    expect(render3.mock.calls.length).toBe(342)
 
     done()
   }, 300)
@@ -508,15 +508,15 @@ describe('rendered components inside Gruu.createComponent as a dynamic children'
 
     document.body.innerHTML = '<div id="root"></div>'
 
-    const store = createComponent({
+    const store = Gruu.createComponent({
       state: {
         toggle: true
       }
     })
 
-    const loader = createComponent({
+    const loader = Gruu.createComponent({
       _type: 'div',
-      children: createComponent({
+      children: Gruu.createComponent({
         _type: 'div',
         $textContent: () => {
           render()
@@ -525,10 +525,10 @@ describe('rendered components inside Gruu.createComponent as a dynamic children'
       })
     })
 
-    const div = createComponent({
+    const div = Gruu.createComponent({
       _type: 'div',
       $children: () => store.state.toggle && (
-        createComponent({
+        Gruu.createComponent({
           _type: 'div',
           children: [
             loader
@@ -538,7 +538,7 @@ describe('rendered components inside Gruu.createComponent as a dynamic children'
     })
 
     const container = document.querySelector('#root')
-    renderApp(container, [div])
+    Gruu.renderApp(container, [div])
 
     return { render, store }
   }
