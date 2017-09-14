@@ -32,8 +32,7 @@ describe('new component while assigning', () => {
   test('overwrites all properties', () => {
     const { main } = init1()
     main.children[0] = { _type: 'div', textContent: 'not red!' }
-    expect(document.body.innerHTML)
-      .toBe('<div id="root"><div><div>not red!</div></div></div>')
+    expect(document.body.innerHTML).toBe('<div id="root"><div><div>not red!</div></div></div>')
   })
 
   const init2 = () => {
@@ -115,7 +114,7 @@ describe('new component while assigning', () => {
     expect(app.children[0].noProxy).toBe(divOuter.noProxy)
   })
 
-  test('changes _parent  and children correctly', () => {
+  test('changes _parent and children correctly', () => {
     const { app } = init3()
     const newDivInner = Gruu.createComponent({
       _type: 'div',
@@ -129,7 +128,10 @@ describe('new component while assigning', () => {
     app.children = [newDivOuter]
 
     expect(document.body.innerHTML).toBe('<div id="root"><div><div><div>test #2</div></div></div></div>')
+
     expect(newDivInner._parent).toBe(newDivOuter.noProxy)
+    // done()
+    // return
     expect(newDivOuter.children[0].noProxy).toBe(newDivInner.noProxy)
     expect(newDivOuter._parent).toBe(app.noProxy)
     expect(app.children[0].noProxy).toBe(newDivOuter.noProxy)
