@@ -128,10 +128,7 @@ describe('new component while assigning', () => {
     app.children = [newDivOuter]
 
     expect(document.body.innerHTML).toBe('<div id="root"><div><div><div>test #2</div></div></div></div>')
-
     expect(newDivInner._parent).toBe(newDivOuter.noProxy)
-    // done()
-    // return
     expect(newDivOuter.children[0].noProxy).toBe(newDivInner.noProxy)
     expect(newDivOuter._parent).toBe(app.noProxy)
     expect(app.children[0].noProxy).toBe(newDivOuter.noProxy)
