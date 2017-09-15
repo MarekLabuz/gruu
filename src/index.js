@@ -7,18 +7,6 @@ const Gruu = ((function () {
   }
   const last = v => v[v.length - 1]
 
-  // const stateModificationHandler = (object, actions, value, modifyTree) => {
-  //   if (modifyTree) {
-  //     if (actions.length === 0) {
-  //       object.state = value
-  //     } else {
-  //       const lastAction = last(actions)
-  //       const v = actions.slice(0, -1).reduce((acc, key) => acc[key], object)
-  //       v[lastAction] = value
-  //     }
-  //   }
-  // }
-
   const noProxy = v => (v && v.noProxy) || v
 
   const get = (object, actions) => actions.reduce((acc, key) => acc[key], object)
@@ -28,6 +16,28 @@ const Gruu = ((function () {
   const bindWithProxy = (component, fn = () => null) => (
     component.noProxy ? component : fn.bind(new Proxy(component, handler(component)))
   )
+
+  const everyEqual = (a, b) => {
+    for (let i = 0; i < a.length; i += 1) {
+      if (a[i] !== b[i]) {
+        return false
+      }
+    }
+    return true
+  }
+
+  const parseTextComponent = (v) => {
+    const vNoProxy = noProxy(v)
+    return (!exists(vNoProxy) || typeof vNoProxy === 'object' ? vNoProxy : { _type: 'text', textContent: vNoProxy })
+  }
+
+  const removeUndefined = (children) => {
+    let i = children.length - 1
+    while (i > 0 && !children[i]) {
+      children.splice(i, 1)
+      i -= 1
+    }
+  }
 
   const clearListeners = (component, paramsTuRemove) => {
     if (component._r && component._w) {
@@ -77,8 +87,6 @@ const Gruu = ((function () {
   }
 
   const handleComponentRender = (object, value, target, action, overriddenChildren) => {
-    // let component = value.noProxy || value
-
     const component = recursivelyCreateAndRenderComponent(value, object)
     object.children[action] = component
     component._parent = object
@@ -86,37 +94,19 @@ const Gruu = ((function () {
     const componentNodeArray = componentToNodeArray(component)
     const nodeParent = findClosestNodeParent(object)
 
-    // if (modifyTree) {
-    //   preTarget.children[action] = component
-    //   if (target) {
-    //     target._parent.children[action] = component
-    //   }
-    // } else if (valueParent) {
-    //   valueParent.children[action] = component
-    // }
-
-    // console.log(overriddenChildren, action, newChildren)
-
-    if (!overriddenChildren || parseInt(action, 10) > object.children.length - 1) {
+    if (!overriddenChildren || parseInt(action, 10) > overriddenChildren.length - 1) {
       componentNodeArray.forEach(({ node }) => {
         if (node) {
           nodeParent._n.appendChild(node)
         }
       })
     } else {
-      // debugger
-
-      const newChildren = [
-        ...overriddenChildren.slice(0, action),
-        component,
-        ...overriddenChildren.slice(parseInt(action, 10) + 1)
-      ]
+      const newChildren = overriddenChildren.slice()
+      newChildren[action] = component
 
       const parentNodeArray = newChildren.reduce((acc, curr) => acc.concat(componentToNodeArray(curr)), [])
-      // const ttt = componentToNodeArray(target || object.children[parseInt(action, 10) + 1])[0]
       const lastItem = last(componentNodeArray)
       if (lastItem) {
-        // console.log(parentNodeArray)
         const index = parentNodeArray.findIndex(({ id }) => id === lastItem.id)
         const item = index !== -1
           ? parentNodeArray.slice(index + 1).find(v => v && v.node && v.node.parentNode)
@@ -134,30 +124,10 @@ const Gruu = ((function () {
     }
   }
 
-  const everyEqual = (a, b) => {
-    for (let i = 0; i < a.length; i += 1) {
-      if (a[i] !== b[i]) {
-        return false
-      }
-    }
-    return true
-  }
-
-  const parseTextComponent = (v) => {
-    const vNoProxy = noProxy(v)
-    return (!exists(vNoProxy) || typeof vNoProxy === 'object' ? vNoProxy : { _type: 'text', textContent: vNoProxy })
-  }
-
   const childrenModificationHandler = (object, actions, value, target, overriddenChildren) => {
-    const lastIndexChildren = actions.lastIndexOf('children')
-    const action = actions.slice(lastIndexChildren + 1)[0]
-
-    // const target = get(object, actions)
+    const action = actions[1]
 
     if (action === undefined) {
-      // let preTarget = get(object, actions.slice(0, -1))
-      // preTarget = preTarget.noProxy || preTarget
-
       if (!object.children) {
         object.children = []
       }
@@ -165,25 +135,12 @@ const Gruu = ((function () {
       const valueArray = (Array.isArray(value) ? value : [value]).map(parseTextComponent)
       object.children = valueArray
 
-
-      // if (valueParent) {
-      //   valueParent.children = valueArray
-      // }
       const length = target.length - valueArray.length
       const val = valueArray.concat(Array(length < 0 ? 0 : length))
 
-      // console.log({ val })
-
-      // return
-
-      let i
-      for (i = 0; i < val.length;) {
+      for (let i = 0; i < val.length;) {
         const currentChild = target[i]
         const newChild = val[i]
-
-        // console.log({ currentChild, newChild })
-        // return
-
         if (valueArray.length >= target.length ||
           (!currentChild || !newChild || !currentChild._key || !newChild._key || currentChild._key === newChild._key)
         ) {
@@ -194,12 +151,13 @@ const Gruu = ((function () {
           i += 1
         } else {
           currentChild._unmount()
-          object.children.splice(i, 1)
+          target = [
+            ...target.slice(0, i),
+            ...target.slice(i + 1)
+          ]
         }
       }
     } else if (!isNaN(parseInt(action, 10))) {
-      // const valueNoProxy = (value && value.noProxy) || value
-
       if (
         target !== value &&
         (
@@ -207,20 +165,8 @@ const Gruu = ((function () {
           !everyEqual(target._createdBy, value._createdBy)
         )
       ) {
-        // const preTarget = get(object, actions.slice(0, -2))
         if (exists(target) && !exists(value)) {
-          // console.log({ target, value })
           target._unmount()
-          // return
-          // if (modifyTree) {
-          //   preTarget.children[action] = value
-          //   target._parent.children[action] = value
-          //   let i = target._parent.children.length - 1
-          //   while (i > 0 && !target._parent.children[i]) {
-          //     target._parent.children.splice(i, 1)
-          //     i -= 1
-          //   }
-          // }
         } else if (exists(target) && exists(value)) {
           clearListeners(target)
           if ((target._type || value._type) && (!target._type || !value._type || target._type !== value._type) &&
@@ -230,11 +176,6 @@ const Gruu = ((function () {
             const component = parseTextComponent(value)
             object.children[action] = component
             component._parent = object
-
-            // debugger
-
-            // const val = parseTextComponent(valueNoProxy)
-            // const component = val
             if (component.children && Array.isArray(component.children)) {
               component.children = component.children.map(noProxy)
             }
@@ -259,7 +200,6 @@ const Gruu = ((function () {
             keys.$.forEach((key) => {
               overrideDynamicProperty(component, key)
             })
-            // console.log({ object, actions, value, target, component, keys })
 
             keys.other.forEach((key) => {
               if (typeof component[key] === 'function') {
@@ -267,34 +207,14 @@ const Gruu = ((function () {
               }
               domModificator(component, [key], component[key], target[key])
             })
-
-            // console.log(component)
-            // return
-            //
-            // if (valueParent) {
-            //   component._parent = valueParent
-            // }
-            //
-            // keys.$.forEach((key) => {
-            //   overrideDynamicProperty(component, key)
-            // })
-            //
-            // keys.other.forEach((key) => {
-            //   if (typeof component[key] === 'function') {
-            //     component[key] = bindWithProxy(component, component[key])
-            //   }
-            //   domModificator(component, [key], component[key], target[key], { valueParent: component })
-            // })
-            //
-            // if (modifyTree) {
-            //   target._parent.children[action] = component
-            //   preTarget.children[action] = component
-            // }
           }
         } else if (!exists(target) && exists(value)) {
           handleComponentRender(object, value, target, action, overriddenChildren)
         }
+      } else {
+        object.children[action] = target
       }
+      removeUndefined(object.children)
     }
   }
 
@@ -302,8 +222,6 @@ const Gruu = ((function () {
     if (value == null) {
       const action = actions[0]
 
-      // console.log({ object, actions, value, target }, object._n, action)
-      // debugger
       object._n[action] = ''
       if (object._n.removeAttribute) {
         object._n.removeAttribute(action)
@@ -324,63 +242,6 @@ const Gruu = ((function () {
       t[action] = value
     }
   }
-
-    // return
-    //
-    // const lastIndexChildren = actions.lastIndexOf('style')
-    // const action = actions.slice(lastIndexChildren + 1)[0]
-    //
-    // if (lastIndexChildren !== -1) {
-    //   if (action === undefined) {
-    //     const target = get(object, actions.slice(0, lastIndexChildren))
-    //
-    //     console.log(target)
-    //     if (!exists(value)) {
-    //       target._n.removeAttribute('style')
-    //       if (modifyTree) {
-    //         target.style = value
-    //       }
-    //     } else {
-    //       const newStyle = Object.assign({}, target.style, value)
-    //       if (!target.style) {
-    //         target.style = {}
-    //       }
-    //       Object.keys(newStyle).forEach((key) => {
-    //         if (target.style[key] !== value[key]) {
-    //           target._n.style[key] = value[key] || ''
-    //           if (modifyTree) {
-    //             target.style[key] = value[key]
-    //           }
-    //         }
-    //       })
-    //     }
-    //   } else {
-    //     const target = get(object, actions.slice(0, -2))
-    //     target._n.style[action] = value
-    //     if (modifyTree) {
-    //       if (!target.style) {
-    //         target.style = {}
-    //       }
-    //       target.style[action] = value
-    //     }
-    //   }
-    // } else {
-    //   const target = get(object, actions.slice(0, -1))
-    //   const lastAction = last(actions)
-    //
-    //   if (target._n && target._n[lastAction] !== value) {
-    //     target._n[lastAction] = value
-    //   }
-    //
-    //   if (target[lastAction] !== value) {
-    //     if (modifyTree) {
-    //       target[lastAction] = value
-    //     }
-    //     if (target._n) {
-    //       target._n[lastAction] = exists(value) ? value : ''
-    //     }
-    //   }
-    // }
 
   const DEFAULT = 0
   const STATE = 1
@@ -410,41 +271,25 @@ const Gruu = ((function () {
     return destination
   }
 
-  // const defaultModificationHandler = (object, actions, value, modifyTree) => {
-  //   const target = get(object, actions.slice(0, -1))
-  //   const action = last(actions)
-  //   if (modifyTree) {
-  //     target[action] = value
-  //   }
-  // }
-
   const domModificator = (obj, actions, val, oldValue, { dest, overriddenChildren = oldValue } = {}) => {
     const destination = dest || findDestination(actions)
 
     const object = noProxy(obj)
     const value = noProxy(val)
 
-    // debugger
-
     switch (destination) {
-      case STATE:
-        // stateModificationHandler(object, actions, value)
-        break
       case CHILDREN:
         childrenModificationHandler(object, actions, value, oldValue, overriddenChildren)
         break
       case NODE:
         nodeModificationHandler(object, actions, value, oldValue)
         break
-      case DEFAULT:
-        // defaultModificationHandler(object, actions, value)
-        break
       default:
         break
     }
   }
 
-  const getHandler = (object, k) => (target, key) => {
+  const getHandler = (object, k, target, key) => {
     if (key === 'noProxy') {
       return target
     }
@@ -520,52 +365,48 @@ const Gruu = ((function () {
     return { c, i }
   }
 
+  const setHandler = (object, k, target, key, value) => {
+    const actions = [...k, key]
+    const { c, i } = lastComponent(object, actions)
+    const oldValue = target[key]
+    const val = noProxy(value)
+    target[key] = val
+    domModificator(c, actions.slice(i), val, oldValue)
+
+    object._actionsToUpdate = [...(object._actionsToUpdate || []), actions.join('.')]
+
+    clearTimeout(object._rerender)
+    object._rerender = setTimeout(() => {
+      const _actions = object._actionsToUpdate
+      object._actionsToUpdate = []
+      if (object._l) {
+        const listenersIds = Object.keys(object._l)
+        listenersIds.forEach((id) => {
+          if (object._l[id]) {
+            const { component, keys } = object._l[id]
+            const paramsToUpdate = Object.keys(component).reduce((acc, param) => [
+              ...acc.filter(p => p !== param),
+              ...(
+                param.startsWith('$') &&
+                _actions.some(_action => keys.has(`${_action} -> ${param.split('.')[0]}`)) ? [param] : []
+              )
+            ], [])
+
+            clearListeners(component, paramsToUpdate)
+            paramsToUpdate.forEach((param) => {
+              updateDynamicProperty(component, param)
+            })
+          }
+        })
+      }
+    })
+
+    return true
+  }
+
   const handler = (object, ...k) => ({
-    get: getHandler(object, k),
-    set (target, key, value) {
-      const actions = [...k, key]
-      const { c, i } = lastComponent(object, actions)
-      const oldValue = target[key]
-      const val = noProxy(value)
-      target[key] = val
-
-      // console.log({ object, target, actions, value })
-      // console.log(oldValue)
-      domModificator(c, actions.slice(i), val, oldValue)
-
-
-      object._actionsToUpdate = [...(object._actionsToUpdate || []), actions.join('.')]
-
-      // console.log({ target, key, val, object })
-
-      clearTimeout(object._rerender)
-      object._rerender = setTimeout(() => {
-        const _actions = object._actionsToUpdate
-        object._actionsToUpdate = []
-        if (object._l) {
-          const listenersIds = Object.keys(object._l)
-          listenersIds.forEach((id) => {
-            if (object._l[id]) {
-              const { component, keys } = object._l[id]
-              const paramsToUpdate = Object.keys(component).reduce((acc, param) => [
-                ...acc.filter(p => p !== param),
-                ...(
-                  param.startsWith('$') &&
-                  _actions.some(_action => keys.has(`${_action} -> ${param.split('.')[0]}`)) ? [param] : []
-                )
-              ], [])
-
-              clearListeners(component, paramsToUpdate)
-              paramsToUpdate.forEach((param) => {
-                updateDynamicProperty(component, param)
-              })
-            }
-          })
-        }
-      })
-
-      return true
-    }
+    get: (target, key) => getHandler(object, k, target, key),
+    set: (target, key, value) => setHandler(object, k, target, key, value)
   })
 
   const createElement = (component) => {
@@ -599,12 +440,9 @@ const Gruu = ((function () {
     }
 
     Object.keys(component).forEach((key) => {
-      if (typeof component[key] === 'function') {
+      if (typeof component[key] === 'function' && !key.startsWith('$')) {
         component[key] = bindWithProxy(component, component[key])
       }
-    })
-
-    Object.keys(component).forEach((key) => {
       overrideDynamicProperty(component, key)
     })
 
@@ -681,7 +519,7 @@ const Gruu = ((function () {
           pureComponent._type === 'text'
             ? document.createTextNode(pureComponent.textContent)
             : createElement(pureComponent)
-          )
+        )
       }
 
       pureComponent._parent = noProxy(parent)
@@ -703,7 +541,7 @@ const Gruu = ((function () {
 
       if (pureComponent.children) {
         return pureComponent.children.reduce((acc, child) =>
-          acc.concat(child ? componentToNodeArray(child) : [{ id: pureComponent._id }]),
+            acc.concat(child ? componentToNodeArray(child) : [{ id: pureComponent._id }]),
           []
         )
       }
