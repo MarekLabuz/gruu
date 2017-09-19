@@ -33,7 +33,7 @@ const Gruu = ((function () {
 
   const removeUndefined = (children) => {
     let i = children.length - 1
-    while (i > 0 && !children[i]) {
+    while (i >= 0 && !children[i]) {
       children.splice(i, 1)
       i -= 1
     }
@@ -68,10 +68,10 @@ const Gruu = ((function () {
       const pureKey = key.slice(1)
       processStack.push({ component, key })
       const val = bindWithProxy(component, value || component[key])()
-      const oldValue = component[pureKey]
-      component[pureKey] = val
-      domModificator(component, [pureKey], val, oldValue)
       processStack.pop()
+      const oldValue = component[pureKey]
+      const v = domModificator(val, oldValue, component, [pureKey])
+      component[pureKey] = v
     }
   }
 
@@ -86,30 +86,30 @@ const Gruu = ((function () {
     }
   }
 
-  const handleComponentRender = (object, value, target, action, overriddenChildren) => {
+  const handleComponentRender = (value, target, object, action) => {
     const component = recursivelyCreateAndRenderComponent(value, object)
-    object.children[action] = component
     component._parent = object
+    value = component
 
     const componentNodeArray = componentToNodeArray(component)
     const nodeParent = findClosestNodeParent(object)
 
-    if (!overriddenChildren || parseInt(action, 10) > overriddenChildren.length - 1) {
+    object.children[action] = component
+    const nodeParentArray = componentToNodeArray(nodeParent, true)
+    object.children[action] = target
+
+    if (false) {
       componentNodeArray.forEach(({ node }) => {
         if (node) {
           nodeParent._n.appendChild(node)
         }
       })
     } else {
-      const newChildren = overriddenChildren.slice()
-      newChildren[action] = component
-
-      const parentNodeArray = newChildren.reduce((acc, curr) => acc.concat(componentToNodeArray(curr)), [])
       const lastItem = last(componentNodeArray)
       if (lastItem) {
-        const index = parentNodeArray.findIndex(({ id }) => id === lastItem.id)
+        const index = nodeParentArray.findIndex(({ id }) => id === lastItem.id)
         const item = index !== -1
-          ? parentNodeArray.slice(index + 1).find(v => v && v.node && v.node.parentNode)
+          ? nodeParentArray.slice(index + 1).find(v => v && v.node && v.node.parentNode)
           : null
         componentNodeArray.forEach(({ node }) => {
           if (node) {
@@ -122,9 +122,11 @@ const Gruu = ((function () {
     if (target) {
       target._unmount()
     }
+
+    return value
   }
 
-  const childrenModificationHandler = (object, actions, value, target, overriddenChildren) => {
+  const childrenModificationHandler = (value, target, object, actions) => {
     const action = actions[1]
 
     if (action === undefined) {
@@ -132,22 +134,22 @@ const Gruu = ((function () {
         object.children = []
       }
 
-      const valueArray = (Array.isArray(value) ? value : [value]).map(parseTextComponent)
-      object.children = valueArray
+      value = (Array.isArray(value) ? value : [value]).map(parseTextComponent)
+      // value.forEach((v, i) => {
+      //   value[i] = parseTextComponent(valueArray[i])
+      // })
+      // object.children = valueArray
 
-      const length = target.length - valueArray.length
-      const val = valueArray.concat(Array(length < 0 ? 0 : length))
+      const length = target.length - value.length
+      const val = value.concat(Array(length < 0 ? 0 : length))
 
       for (let i = 0; i < val.length;) {
         const currentChild = target[i]
         const newChild = val[i]
-        if (valueArray.length >= target.length ||
+        if (value.length >= target.length ||
           (!currentChild || !newChild || !currentChild._key || !newChild._key || currentChild._key === newChild._key)
         ) {
-          domModificator(object, ['children', `${i}`], newChild, currentChild, {
-            dest: CHILDREN,
-            overriddenChildren: target
-          })
+          value[i] = domModificator(newChild, currentChild, object, ['children', `${i}`], { dest: CHILDREN })
           i += 1
         } else {
           currentChild._unmount()
@@ -157,6 +159,8 @@ const Gruu = ((function () {
           ]
         }
       }
+
+      removeUndefined(value)
     } else if (!isNaN(parseInt(action, 10))) {
       if (
         target !== value &&
@@ -167,15 +171,19 @@ const Gruu = ((function () {
       ) {
         if (exists(target) && !exists(value)) {
           target._unmount()
+          // object.children[action] = value
+          // removeUndefined(object.children)
         } else if (exists(target) && exists(value)) {
           clearListeners(target)
           if ((target._type || value._type) && (!target._type || !value._type || target._type !== value._type) &&
             (target._type !== 'text' || typeof value === 'object')) {
-            handleComponentRender(object, value, target, action, overriddenChildren)
+            value = handleComponentRender(value, target, object, action)
           } else {
             const component = parseTextComponent(value)
-            object.children[action] = component
+            // object.children[action] = component
+
             component._parent = object
+
             if (component.children && Array.isArray(component.children)) {
               component.children = component.children.map(noProxy)
             }
@@ -205,17 +213,20 @@ const Gruu = ((function () {
               if (typeof component[key] === 'function') {
                 component[key] = bindWithProxy(component, component[key])
               }
-              domModificator(component, [key], component[key], target[key])
+              component[key] = domModificator(component[key], target[key], component, [key])
             })
+
+            value = component
           }
         } else if (!exists(target) && exists(value)) {
-          handleComponentRender(object, value, target, action, overriddenChildren)
+          value = handleComponentRender(value, target, object, action)
         }
       } else {
-        object.children[action] = target
+        // object.children[action] = target
       }
-      removeUndefined(object.children)
     }
+
+    return value
   }
 
   const nodeModificationHandler = (object, actions, value, target) => {
@@ -241,6 +252,8 @@ const Gruu = ((function () {
       const action = last(actions)
       t[action] = value
     }
+
+    return value
   }
 
   const DEFAULT = 0
@@ -271,7 +284,7 @@ const Gruu = ((function () {
     return destination
   }
 
-  const domModificator = (obj, actions, val, oldValue, { dest, overriddenChildren = oldValue } = {}) => {
+  const domModificator = (val, oldValue, obj, actions, { dest } = {}) => {
     const destination = dest || findDestination(actions)
 
     const object = noProxy(obj)
@@ -279,13 +292,11 @@ const Gruu = ((function () {
 
     switch (destination) {
       case CHILDREN:
-        childrenModificationHandler(object, actions, value, oldValue, overriddenChildren)
-        break
+        return childrenModificationHandler(value, oldValue, object, actions)
       case NODE:
-        nodeModificationHandler(object, actions, value, oldValue)
-        break
+        return nodeModificationHandler(object, actions, value, oldValue)
       default:
-        break
+        return val
     }
   }
 
@@ -365,13 +376,40 @@ const Gruu = ((function () {
     return { c, i }
   }
 
+  // const parseValue = (val, actions, target) => {
+  //   const destination = findDestination(actions)
+  //
+  //   const value = noProxy(val)
+  //
+  //   switch (destination) {
+  //     case CHILDREN: {
+  //       const v = parseTextComponent(value)
+  //       return {
+  //         destination,
+  //         value: Array.isArray(target) && !Array.isArray(v) ? [v] : v
+  //       }
+  //     }
+  //     default:
+  //       return {
+  //         destination,
+  //         value
+  //       }
+  //   }
+  // }
+
   const setHandler = (object, k, target, key, value) => {
     const actions = [...k, key]
     const { c, i } = lastComponent(object, actions)
     const oldValue = target[key]
+    // const { value: val } = parseValue(value, actions, target[key])
     const val = noProxy(value)
-    target[key] = val
-    domModificator(c, actions.slice(i), val, oldValue)
+
+    const v = domModificator(val, oldValue, c, actions.slice(i))
+
+    // console.log(v)
+    // domModificator(c, actions.slice(i), val, oldValue)
+
+    target[key] = v
 
     object._actionsToUpdate = [...(object._actionsToUpdate || []), actions.join('.')]
 

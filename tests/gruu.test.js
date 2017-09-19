@@ -67,7 +67,7 @@ describe('new component while assigning', () => {
     app.children[0] = { _type: 'div', textContent: 'test #4' }
     expect(document.body.innerHTML).toBe('<div id="root"><div><div>test #4</div>test #3</div></div>')
     expect(app.children[0].children[0]).toBe(undefined)
-    expect(app.children[0].children.length).toBe(1)
+    expect(app.children[0].children.length).toBe(0)
 
     app.children[0] = {
       _type: 'div',
