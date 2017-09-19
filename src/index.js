@@ -86,9 +86,9 @@ const Gruu = ((function () {
     }
   }
 
-  const handleComponentRender = (value, target, object, action) => {
-    const component = recursivelyCreateAndRenderComponent(value, object)
-    component._parent = object
+  const handleComponentRender = (value, target, object, action, parent) => {
+    const component = recursivelyCreateAndRenderComponent(value, parent)
+    component._parent = parent
     value = component
 
     const componentNodeArray = componentToNodeArray(component)
@@ -129,7 +129,7 @@ const Gruu = ((function () {
     return value
   }
 
-  const childrenModificationHandler = (value, target, object, actions) => {
+  const childrenModificationHandler = (value, target, object, actions, parent) => {
     const action = actions[1]
 
     if (action === undefined) {
@@ -148,7 +148,7 @@ const Gruu = ((function () {
         if (value.length >= target.length ||
           (!currentChild || !newChild || !currentChild._key || !newChild._key || currentChild._key === newChild._key)
         ) {
-          value[i] = domModificator(newChild, currentChild, object, ['children', `${i}`], { dest: CHILDREN })
+          value[i] = domModificator(newChild, currentChild, object, ['children', `${i}`], { dest: CHILDREN, parent })
           i += 1
         } else {
           currentChild._unmount()
@@ -168,17 +168,19 @@ const Gruu = ((function () {
           !everyEqual(target._createdBy, value._createdBy)
         )
       ) {
-        if (exists(target) && !exists(value)) {
+        const targetExists = exists(target)
+        const valueExists = exists(value)
+        if (targetExists && !valueExists) {
           target._unmount()
-        } else if (exists(target) && exists(value)) {
+        } else if (targetExists && valueExists) {
           clearListeners(target)
           if ((target._type || value._type) && (!target._type || !value._type || target._type !== value._type) &&
             (target._type !== 'text' || typeof value === 'object')) {
-            value = handleComponentRender(value, target, object, action)
+            value = handleComponentRender(value, target, object, action, parent)
           } else {
             const component = parseTextComponent(value)
 
-            component._parent = object
+            component._parent = parent
 
             if (component.children && Array.isArray(component.children)) {
               component.children = component.children.map(noProxy)
@@ -209,13 +211,13 @@ const Gruu = ((function () {
               if (typeof component[key] === 'function') {
                 component[key] = bindWithProxy(component, component[key])
               }
-              component[key] = domModificator(component[key], target[key], component, [key])
+              component[key] = domModificator(component[key], target[key], target, [key], { parent: component })
             })
 
             value = component
           }
-        } else if (!exists(target) && exists(value)) {
-          value = handleComponentRender(value, target, object, action)
+        } else if (!targetExists && valueExists) {
+          value = handleComponentRender(value, target, object, action, parent)
         }
       } else {
         value = target
@@ -238,7 +240,7 @@ const Gruu = ((function () {
       const mergedValue = Object.assign({}, target, value)
       if (object._n) {
         Object.keys(mergedValue).forEach((key) => {
-          if (target[key] !== value[key]) {
+          if (!target || target[key] !== value[key]) {
             object._n[action][key] = value[key] || ''
           }
         })
@@ -280,7 +282,7 @@ const Gruu = ((function () {
     return destination
   }
 
-  const domModificator = (val, oldValue, obj, actions, { dest } = {}) => {
+  const domModificator = (val, oldValue, obj, actions, { dest, parent = obj } = {}) => {
     const destination = dest || findDestination(actions)
 
     const object = noProxy(obj)
@@ -288,7 +290,7 @@ const Gruu = ((function () {
 
     switch (destination) {
       case CHILDREN:
-        return childrenModificationHandler(value, oldValue, object, actions)
+        return childrenModificationHandler(value, oldValue, object, actions, parent)
       case NODE:
         return nodeModificationHandler(object, actions, value, oldValue)
       default:
