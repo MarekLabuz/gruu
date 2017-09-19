@@ -94,17 +94,20 @@ const Gruu = ((function () {
     const componentNodeArray = componentToNodeArray(component)
     const nodeParent = findClosestNodeParent(object)
 
-    object.children[action] = component
-    const nodeParentArray = componentToNodeArray(nodeParent, true)
-    object.children[action] = target
-
-    if (false) {
+    if (
+      (nodeParent === object || (nodeParent.children.length === 1 && nodeParent.children[0] === object))
+      && parseInt(action, 10) > object.children.length - 1
+    ) {
       componentNodeArray.forEach(({ node }) => {
         if (node) {
           nodeParent._n.appendChild(node)
         }
       })
     } else {
+      object.children[action] = component
+      const nodeParentArray = componentToNodeArray(nodeParent, true)
+      object.children[action] = target
+
       const lastItem = last(componentNodeArray)
       if (lastItem) {
         const index = nodeParentArray.findIndex(({ id }) => id === lastItem.id)
@@ -135,10 +138,6 @@ const Gruu = ((function () {
       }
 
       value = (Array.isArray(value) ? value : [value]).map(parseTextComponent)
-      // value.forEach((v, i) => {
-      //   value[i] = parseTextComponent(valueArray[i])
-      // })
-      // object.children = valueArray
 
       const length = target.length - value.length
       const val = value.concat(Array(length < 0 ? 0 : length))
@@ -171,8 +170,6 @@ const Gruu = ((function () {
       ) {
         if (exists(target) && !exists(value)) {
           target._unmount()
-          // object.children[action] = value
-          // removeUndefined(object.children)
         } else if (exists(target) && exists(value)) {
           clearListeners(target)
           if ((target._type || value._type) && (!target._type || !value._type || target._type !== value._type) &&
@@ -180,7 +177,6 @@ const Gruu = ((function () {
             value = handleComponentRender(value, target, object, action)
           } else {
             const component = parseTextComponent(value)
-            // object.children[action] = component
 
             component._parent = object
 
@@ -222,7 +218,7 @@ const Gruu = ((function () {
           value = handleComponentRender(value, target, object, action)
         }
       } else {
-        // object.children[action] = target
+        value = target
       }
     }
 
@@ -376,39 +372,12 @@ const Gruu = ((function () {
     return { c, i }
   }
 
-  // const parseValue = (val, actions, target) => {
-  //   const destination = findDestination(actions)
-  //
-  //   const value = noProxy(val)
-  //
-  //   switch (destination) {
-  //     case CHILDREN: {
-  //       const v = parseTextComponent(value)
-  //       return {
-  //         destination,
-  //         value: Array.isArray(target) && !Array.isArray(v) ? [v] : v
-  //       }
-  //     }
-  //     default:
-  //       return {
-  //         destination,
-  //         value
-  //       }
-  //   }
-  // }
-
   const setHandler = (object, k, target, key, value) => {
     const actions = [...k, key]
     const { c, i } = lastComponent(object, actions)
     const oldValue = target[key]
-    // const { value: val } = parseValue(value, actions, target[key])
     const val = noProxy(value)
-
     const v = domModificator(val, oldValue, c, actions.slice(i))
-
-    // console.log(v)
-    // domModificator(c, actions.slice(i), val, oldValue)
-
     target[key] = v
 
     object._actionsToUpdate = [...(object._actionsToUpdate || []), actions.join('.')]
@@ -554,10 +523,10 @@ const Gruu = ((function () {
     if (pureComponent) {
       if (pureComponent._type) {
         pureComponent._n = pureComponent._n || (
-          pureComponent._type === 'text'
-            ? document.createTextNode(pureComponent.textContent)
-            : createElement(pureComponent)
-        )
+            pureComponent._type === 'text'
+              ? document.createTextNode(pureComponent.textContent)
+              : createElement(pureComponent)
+          )
       }
 
       pureComponent._parent = noProxy(parent)
