@@ -8,6 +8,8 @@ Gruu is a small and powerful JavaScript library for creating dynamic content. Us
 [![travis](https://travis-ci.org/MarekLabuz/gruu.svg?branch=master)](https://travis-ci.org/MarekLabuz/gruu)
 [![gzip size](http://img.badgesize.io/https://gruujs.com/gruu.js?compression=gzip)](https://gruujs.com/gruu.js)
 
+**Benchmarks**: https://rawgit.com/krausest/js-framework-benchmark/master/webdriver-ts-results/table.html (gruu-v1.6.12-keyed)
+
 **Example Project**: https://github.com/MarekLabuz/mareklabuz.github.io
 
 ### Browser compatibility table
