@@ -10,6 +10,8 @@ Gruu is a small and powerful JavaScript library for creating dynamic content. Us
 
 **Benchmarks**: https://rawgit.com/krausest/js-framework-benchmark/master/webdriver-ts-results/table.html (gruu-v1.6.12-keyed)
 
+**Introduction**: https://medium.com/@lmrk/creating-web-applications-in-gruu-ab68737d34e5
+
 **Example Project**: https://github.com/MarekLabuz/mareklabuz.github.io
 
 ### Browser compatibility table
