@@ -152,10 +152,7 @@ const Gruu = ((function () {
           i += 1
         } else {
           currentChild._unmount()
-          target = [
-            ...target.slice(0, i),
-            ...target.slice(i + 1)
-          ]
+          target.splice(i, 1)
         }
       }
 
@@ -480,6 +477,17 @@ const Gruu = ((function () {
     return component
   }
 
+  const restoreListeners = (object) => {
+    if (object._r) {
+      Object.keys(object).forEach((key) => {
+        updateDynamicProperty(object, key)
+      })
+      if (!object._n && object.children) {
+        object.children.forEach(restoreListeners)
+      }
+    }
+  }
+
   const recursivelyCreateAndRenderComponent = (obj, parent, nodeParent) => {
     const object = parseTextComponent(obj)
 
@@ -487,11 +495,7 @@ const Gruu = ((function () {
       return object
     }
 
-    if (object._r) {
-      Object.keys(object).forEach((key) => {
-        updateDynamicProperty(object, key)
-      })
-    }
+    restoreListeners(object)
 
     const component = internallyCreateComponent(object)
     internallyRenderComponent(component, parent, nodeParent)
