@@ -2,13 +2,13 @@
 
 https://gruujs.com
 
-Gruu is a small and powerful JavaScript library for creating dynamic content. Using only JavaScript you can create user interfaces that change dynamically. Gruu is fully dependency free and has simple API.
+Gruu is a small and powerful JavaScript library for creating dynamic content. Using only JavaScript you can create user interfaces that change dynamically. Gruu is fully dependency free and uses ES6 Proxies to trigger changes in DOM.
 
 [![npm](https://img.shields.io/npm/v/gruujs.svg)](http://npm.im/gruujs)
 [![travis](https://travis-ci.org/MarekLabuz/gruu.svg?branch=master)](https://travis-ci.org/MarekLabuz/gruu)
 [![gzip size](http://img.badgesize.io/https://gruujs.com/gruu.js?compression=gzip)](https://gruujs.com/gruu.js)
 
-**Benchmarks**: https://rawgit.com/krausest/js-framework-benchmark/master/webdriver-ts-results/table.html (gruu-v1.6.12-keyed)
+**Benchmarks**: https://rawgit.com/krausest/js-framework-benchmark/master/webdriver-ts-results/table.html (gruu v1.7.3-non-keyed)
 
 **Introduction**: https://medium.com/@lmrk/creating-web-applications-in-gruu-ab68737d34e5
 
@@ -24,4 +24,4 @@ Gruu is a small and powerful JavaScript library for creating dynamic content. Us
 
 MIT
 
-Copyright © 2017, Marek Łabuz
+Copyright © 2017-2018, Marek Łabuz
