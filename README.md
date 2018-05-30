@@ -1,4 +1,12 @@
-## Gruu
+<div align="center">
+  <a href="#">
+    <img width="130" height="130" src="https://raw.githubusercontent.com/MarekLabuz/gruu/master/logo.png" />
+  </a>
+  <h1>Gruu</h1>
+  <p>
+    https://gruujs.com
+  </p>
+</div>
 
 https://gruujs.com
 
