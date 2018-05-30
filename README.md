@@ -1,14 +1,12 @@
 <div align="center">
   <a href="#">
-    <img width="140" height="140" src="https://raw.githubusercontent.com/MarekLabuz/gruu/master/logo.png" />
+    <img width="145" height="145" src="https://raw.githubusercontent.com/MarekLabuz/gruu/master/logo.png" />
   </a>
   <h1>Gruu</h1>
   <p>
     https://gruujs.com
   </p>
 </div>
-
-https://gruujs.com
 
 Gruu is a small and powerful JavaScript library for creating dynamic content. Using only JavaScript you can create user interfaces that change dynamically. Gruu is fully dependency free and uses ES6 Proxies to trigger changes in DOM.
 
