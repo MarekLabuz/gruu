@@ -1,6 +1,6 @@
 <div align="center">
   <a href="#">
-    <img width="130" height="130" src="https://raw.githubusercontent.com/MarekLabuz/gruu/master/logo.png" />
+    <img width="140" height="140" src="https://raw.githubusercontent.com/MarekLabuz/gruu/master/logo.png" />
   </a>
   <h1>Gruu</h1>
   <p>
