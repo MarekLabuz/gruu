@@ -5,14 +5,12 @@ const Gruu = ((function () {
     lastId += 1
     return lastId
   }
+  const isManualAttribute = v => v.startsWith('aria') || v === 'role'
+  const camelToKebab = s => s.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase()
   const last = v => v[v.length - 1]
-
   const noProxy = v => (v && v.noProxy) || v
-
   const get = (object, actions) => actions.reduce((acc, key) => acc[key], object)
-
   const findClosestNodeParent = object => (object._n ? object : findClosestNodeParent(object._parent))
-
   const bindWithProxy = (component, fn = () => null) => (
     component.noProxy ? component : fn.bind(new Proxy(component, handler(component)))
   )
@@ -230,7 +228,11 @@ const Gruu = ((function () {
 
       object._n[action] = ''
       if (object._n.removeAttribute) {
-        object._n.removeAttribute(action)
+        if (isManualAttribute(action)) {
+          object._n.removeAttribute(camelToKebab(action))
+        } else {
+          object._n.removeAttribute(action)
+        }
       }
     } else if (value && typeof value === 'object') {
       const action = actions[0]
@@ -245,7 +247,11 @@ const Gruu = ((function () {
     } else if (object._n && target !== value) {
       const t = get(object._n, actions.slice(0, -1))
       const action = last(actions)
-      t[action] = value
+      if (isManualAttribute(action)) {
+        t.setAttribute(camelToKebab(action), value)
+      } else {
+        t[action] = value
+      }
     }
 
     return value
@@ -420,6 +426,9 @@ const Gruu = ((function () {
     Object.keys(component).forEach((key) => {
       if (key.startsWith('_') || key.startsWith('$')) {
         return
+      }
+      if (isManualAttribute(key)) {
+        node.setAttribute(camelToKebab(key), component[key])
       }
       switch (key) {
         case 'style':

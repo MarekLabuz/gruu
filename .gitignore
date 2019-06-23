@@ -1,2 +1,8 @@
 node_modules
+coverage
 .idea
+.DS_Store
+server.js
+index.css
+index.html
+index.js

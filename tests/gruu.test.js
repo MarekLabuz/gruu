@@ -1677,3 +1677,53 @@ describe('components with "this" context', () => {
     done()
   }, 150)
 })
+
+describe('component with aria- atributes', () => {
+  const init = () => {
+    document.body.innerHTML = '<div id="root"></div>'
+
+    const app = Gruu.createComponent({
+      _type: 'div',
+      role: 'button',
+      ariaHidden: 'true',
+      ariaLabel: 'test',
+      textContent: 'aria test'
+    })
+
+    const container = document.querySelector('#root')
+    Gruu.renderApp(container, [app])
+
+    return { app }
+  }
+
+  test('renders correctly', (done) => {
+    init()
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div role="button" aria-hidden="true" aria-label="test">aria test</div></div>')
+    done()
+  })
+
+  test('changes correctly', (done) => {
+    const { app } = init()
+    app.role = 'link'
+    app.ariaHidden = 'false'
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div role="link" aria-hidden="false" aria-label="test">aria test</div></div>')
+    app.ariaHidden = 'true'
+    app.ariaLabel = 'test2'
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div role="link" aria-hidden="true" aria-label="test2">aria test</div></div>')
+    done()
+  })
+
+  test('removes aria- attribute', (done) => {
+    const { app } = init()
+    app.ariaHidden = null
+    expect(document.body.innerHTML)
+      .toBe('<div id="root"><div role="button" aria-label="test">aria test</div></div>')
+    app.role = null
+    app.ariaLabel = null
+    expect(document.body.innerHTML).toBe('<div id="root"><div>aria test</div></div>')
+    done()
+  })
+})
